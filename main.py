@@ -7,19 +7,8 @@ from pyramid.view import view_config, view_defaults
 from pyramid.response import Response
 import github
 from github import Github, NamedUser
-
-
-TOKEN_NAME = 'CI_HOOKS_GITHUB_TOKEN'
-if 'IS_APP_ENGINE' not in os.environ:
-    if TOKEN_NAME not in os.environ:
-        raise RuntimeError('No github token in env')
-    GITHUB_TOKEN = os.environ[TOKEN_NAME]
-else:
-    import firebase_admin
-    from firebase_admin import firestore
-    firebase_admin.initialize_app()
-    SECRETS = firestore.client().collection('secrets')
-    GITHUB_TOKEN = SECRETS.document(TOKEN_NAME).get().to_dict()['token']
+import constants as c
+import key_value_store  # Do this after firebase is initialized
 
 
 @view_defaults(
@@ -54,10 +43,15 @@ class PayloadView(object):
         action = self.payload['action']
         if action == 'open':
             print(self.payload['pusher'])
-            github_client = Github(GITHUB_TOKEN)
+            github_client = Github(c.GITHUB_TOKEN)
 
             commit_sha = self.payload['pull_request']['head']['sha']
             repo_name = self.payload['pull_request']['base']['repo']['full_name']
+
+            # TODO: Validate bot.json
+
+            # TODO: Validate that user name matches agent_source_commit
+            #   and agent_json_commit.
 
             status = create_status(commit_sha, github_client, repo_name)
 
@@ -70,10 +64,10 @@ class PayloadView(object):
         return {'ping': True}
 
 
-def check_token(request):
-    if GITHUB_TOKEN:
-        return Response('I have a token of length %r that starts '
-                        'with %s' % (len(GITHUB_TOKEN), GITHUB_TOKEN[:4]))
+def diagnostics(request):
+    if c.GITHUB_TOKEN:
+        return Response('I have a github token of length %r that starts '
+                        'with %s' % (len(c.GITHUB_TOKEN), c.GITHUB_TOKEN[:4]))
     else:
         return Response('Not token found')
 
@@ -83,13 +77,10 @@ def root(request):
 
 
 def adhoc():
-
-
-
     repo_name = 'deepdrive/agent-zoo'
     commit_sha = 'ff075f40afe1e2545ee6cb8e029dc78c83b9f740'
 
-    github_client = Github(GITHUB_TOKEN)
+    github_client = Github(c.GITHUB_TOKEN)
 
     github.enable_console_debug_logging()
 
@@ -122,13 +113,30 @@ def create_status(commit_sha, github_client, repo_name):
 with Configurator() as config:
 
     config.add_route(name='root', pattern='/')
-    config.add_route(name='check_token', pattern='/check_token')
-
     config.add_view(view=root, route_name='root')
-    config.add_view(view=check_token, route_name='check_token')
 
-    config.add_route(name="github_payload", pattern="/github_payload")
+    config.add_route(name='diagnostics', pattern='/diagnostics')
+    config.add_view(view=diagnostics, route_name='diagnostics')
+
+    # TODO: Implement confirm request
+"""
+##### 2. Send `/confirm` POST
+
+Problem evaluators must then send a confirmation request with the `eval-key` to `https://liaison.botleague.io/confirm` to verify that botleague indeed initiated the evaluation. If we do not respond with a 200, you
+should abort the evaluation.
+"""
+
+    # TODO: Implement results request, and set should_gen_leaderboard to true
+"""
+##### 3. Send `results.json` POST
+
+Finally evaluators POST `results.json` to `https://liaison.botleague.io/results` with the `eval-key` to complete the evaluation and to be included on the Bot League leaderboards. An example `results.json` can be found [here](problems/examples/results.json).
+"""
+
+    config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation
+
+
 
     config.scan()
     app = config.make_wsgi_app()
