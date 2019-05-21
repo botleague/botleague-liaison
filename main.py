@@ -32,6 +32,8 @@ class PayloadView(object):
         # {u'name': u'marioidival', u'email': u'marioidival@gmail.com'}
         print(self.payload['pusher'])
 
+        # TODO: Set should gen when a problem readme changes
+
         # do busy work...
         return "nothing to push payload"  # or simple {}
 
@@ -41,19 +43,84 @@ class PayloadView(object):
         header HTTP-X-Github-Event type is Pull Request"""
         # {u'name': u'marioidival', u'email': u'marioidival@gmail.com'}
         action = self.payload['action']
-        if action == 'open':
-            print(self.payload['pusher'])
-            github_client = Github(c.GITHUB_TOKEN)
+        if action == 'opened' or action == 'synchronize':
+            # print(self.payload['sender'])
+            pull_request = self.payload['pull_request']
+            head = pull_request['head']
+            head_repo_full_name = head['repo']['full_name']
+
+            base_repo_name = pull_request['base']['repo']['full_name']
+            user_or_org, repo_name = head_repo_full_name.split('/')
+
+            base_repo = c.GITHUB_CLIENT.get_repo(base_repo_name)
+
+            pull_number = pull_request['number']
+
+            # Get all the changed files in pull request
+            changed_files = list(base_repo.get_pull(pull_number).get_files())
+
+            base_dirs = set()
+            changed_filenames = []
+            changed_filetypes = set()
+            for changed_file in changed_files:
+                filename = changed_file.filename
+                changed_filenames.append(filename)
+                base_dir = filename.split('/')[0]
+                base_dirs.add(base_dir)
+                filetype = filename.split('.')[-1]
+                changed_filetypes.add(filetype)
+
+            base_dirs = list(base_dirs)
+            if base_dirs == [c.BOTS_DIR]:
+                # Trigger bot evaluation
+                pass
+            elif base_dirs == [c.PROBLEMS_DIR]:
+                # Trigger problem CI
+                pass
+            elif c.BOTS_DIR in base_dirs or c.PROBLEMS_DIR in base_dirs:
+                # Fail pull request, say that only bots or problems can be changed
+                pass
+            else:
+                # README or something was changed.
+                if 'json' in changed_filetypes:
+                    # Fail pull request. Unexpected files, json files should
+                    # only be changed in the context of a bot or problem.
+                    pass
+
+                pass
+            allowed_base_dirs = set(['bots', 'problems'])
+
+            dir_diff = base_dirs - allowed_base_dirs
+
+            if dir_diff:
+                # TODO: Fail pull request and report back dir_diff
+                pass
+
+            # TODO: Verify that only /bots or /problems have been changed
+            # TODO: If bots verify that the submitting user
+
+            # TODO: Get patch from head:
 
             commit_sha = self.payload['pull_request']['head']['sha']
-            repo_name = self.payload['pull_request']['base']['repo']['full_name']
+
+
+
+
 
             # TODO: Validate bot.json
+            #   Ensure that the problems exist
+            # TODO: Copy the docker image over to GCR
+            # TODO: Add botname to results.json
+            # TODO: Add username to results.json
 
-            # TODO: Validate that user name matches agent_source_commit
-            #   and agent_json_commit.
+            # TODO: Verify that a problem submission does not change the name of an existing problem.
 
-            status = create_status(commit_sha, github_client, repo_name)
+            # TODO:
+
+            # TODO: Validate that username matches source_commit
+            #   and json_commit.
+
+            # status = create_status(commit_sha, github_client, repo_name)
 
         # do busy work...
         return "nothing to pull request payload"  # or simple {}
@@ -77,7 +144,7 @@ def root(request):
 
 
 def adhoc():
-    repo_name = 'deepdrive/agent-zoo'
+    repo_name = 'deepdrive/botleague'
     commit_sha = 'ff075f40afe1e2545ee6cb8e029dc78c83b9f740'
 
     github_client = Github(c.GITHUB_TOKEN)
@@ -104,7 +171,7 @@ def create_status(commit_sha, github_client, repo_name):
     status = commit.create_status(
         'pending',
         description='Agent!! is being evaluated against sim v3.0',
-        target_url='https://deepdrive.io/leaderboards/this-agent/this-evaluation',
+        target_url='https://botleague.io/users/username/botname/this-evaluation',
         context='Deepdrive')
     return status
 
@@ -119,24 +186,22 @@ with Configurator() as config:
     config.add_view(view=diagnostics, route_name='diagnostics')
 
     # TODO: Implement confirm request
-"""
-##### 2. Send `/confirm` POST
+    """
+    ##### 2. Send `/confirm` POST
+    
+    Problem evaluators must then send a confirmation request with the `eval-key` to `https://liaison.botleague.io/confirm` to verify that botleague indeed initiated the evaluation. If we do not respond with a 200, you
+    should abort the evaluation.
+    """
 
-Problem evaluators must then send a confirmation request with the `eval-key` to `https://liaison.botleague.io/confirm` to verify that botleague indeed initiated the evaluation. If we do not respond with a 200, you
-should abort the evaluation.
-"""
-
-    # TODO: Implement results request, and set should_gen_leaderboard to true
-"""
-##### 3. Send `results.json` POST
-
-Finally evaluators POST `results.json` to `https://liaison.botleague.io/results` with the `eval-key` to complete the evaluation and to be included on the Bot League leaderboards. An example `results.json` can be found [here](problems/examples/results.json).
-"""
+        # TODO: Implement results request, and set should_gen_leaderboard to true
+    """
+    ##### 3. Send `results.json` POST
+    
+    Finally evaluators POST `results.json` to `https://liaison.botleague.io/results` with the `eval-key` to complete the evaluation and to be included on the Bot League leaderboards. An example `results.json` can be found [here](problems/examples/results.json).
+    """
 
     config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation
-
-
 
     config.scan()
     app = config.make_wsgi_app()
