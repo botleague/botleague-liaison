@@ -2,7 +2,11 @@ from __future__ import print_function
 
 import os
 from wsgiref.simple_server import make_server
+
+from bot_eval import bot_eval
+from error_response import ErrorResponse
 from pyramid.config import Configurator
+from pyramid.httpexceptions import HTTPClientError
 from pyramid.view import view_config, view_defaults
 from pyramid.response import Response
 import github
@@ -44,86 +48,64 @@ class PayloadView(object):
         # {u'name': u'marioidival', u'email': u'marioidival@gmail.com'}
         action = self.payload['action']
         if action == 'opened' or action == 'synchronize':
-            # print(self.payload['sender'])
-            pull_request = self.payload['pull_request']
-            head = pull_request['head']
-            head_repo_full_name = head['repo']['full_name']
-
-            base_repo_name = pull_request['base']['repo']['full_name']
-            user_or_org, repo_name = head_repo_full_name.split('/')
-
-            base_repo = c.GITHUB_CLIENT.get_repo(base_repo_name)
-
-            pull_number = pull_request['number']
-
-            # Get all the changed files in pull request
-            changed_files = list(base_repo.get_pull(pull_number).get_files())
-
-            base_dirs = set()
-            changed_filenames = []
-            changed_filetypes = set()
-            for changed_file in changed_files:
-                filename = changed_file.filename
-                changed_filenames.append(filename)
-                base_dir = filename.split('/')[0]
-                base_dirs.add(base_dir)
-                filetype = filename.split('.')[-1]
-                changed_filetypes.add(filetype)
-
-            base_dirs = list(base_dirs)
-            if base_dirs == [c.BOTS_DIR]:
-                # Trigger bot evaluation
-                pass
-            elif base_dirs == [c.PROBLEMS_DIR]:
-                # Trigger problem CI
-                pass
-            elif c.BOTS_DIR in base_dirs or c.PROBLEMS_DIR in base_dirs:
-                # Fail pull request, say that only bots or problems can be changed
-                pass
-            else:
-                # README or something was changed.
-                if 'json' in changed_filetypes:
-                    # Fail pull request. Unexpected files, json files should
-                    # only be changed in the context of a bot or problem.
-                    pass
-
-                pass
-            allowed_base_dirs = set(['bots', 'problems'])
-
-            dir_diff = base_dirs - allowed_base_dirs
-
-            if dir_diff:
-                # TODO: Fail pull request and report back dir_diff
-                pass
-
-            # TODO: Verify that only /bots or /problems have been changed
-            # TODO: If bots verify that the submitting user
-
-            # TODO: Get patch from head:
-
-            commit_sha = self.payload['pull_request']['head']['sha']
-
-
-
-
-
-            # TODO: Validate bot.json
-            #   Ensure that the problems exist
-            # TODO: Copy the docker image over to GCR
-            # TODO: Add botname to results.json
-            # TODO: Add username to results.json
-
-            # TODO: Verify that a problem submission does not change the name of an existing problem.
-
-            # TODO:
-
-            # TODO: Validate that username matches source_commit
-            #   and json_commit.
-
-            # status = create_status(commit_sha, github_client, repo_name)
+            self.process_pull_request_changes()
 
         # do busy work...
         return "nothing to pull request payload"  # or simple {}
+
+    def process_pull_request_changes(self):
+        # print(self.payload['sender'])
+        ret_status = ''
+
+        pull_request = self.payload['pull_request']
+        head = pull_request['head']
+        head_repo_name = head['repo']['full_name']
+        head_repo = c.GITHUB_CLIENT.get_repo(head_repo_name)
+        user_or_org, repo_name = head_repo_name.split('/')
+        base_repo_name = pull_request['base']['repo']['full_name']
+        base_repo = c.GITHUB_CLIENT.get_repo(base_repo_name)
+        pull_number = pull_request['number']
+
+        # Get all the changed files in pull request
+        changed_files = list(base_repo.get_pull(pull_number).get_files())
+
+        base_dirs = set()
+        changed_filenames = []
+        changed_filetypes = set()
+        for changed_file in changed_files:
+            filename = changed_file.filename
+            changed_filenames.append(filename)
+            base_dir = filename.split('/')[0]
+            base_dirs.add(base_dir)
+            filetype = filename.split('.')[-1]
+            changed_filetypes.add(filetype)
+        base_dirs = list(base_dirs)
+        if base_dirs == [c.BOTS_DIR]:
+            # Trigger bot evaluation
+            eval_resp = \
+                bot_eval(changed_filenames, user_or_org, base_repo, head_repo)
+            if isinstance(eval_resp, ErrorResponse):
+                ret_status = c.CI_STATUS_ERROR
+            else:
+                ret_status = c.CI_STATUS_PENDING
+        elif base_dirs == [c.PROBLEMS_DIR]:
+            # Trigger problem CI
+            pass
+        elif c.BOTS_DIR in base_dirs or c.PROBLEMS_DIR in base_dirs:
+            # Fail pull request, say that only bots or problems can be changed
+            pass
+        elif 'json' in changed_filetypes:
+            # Fail pull request. Unexpected files, json files should
+            # only be changed in the context of a bot or problem.
+            pass
+        else:
+            # Allow the pull request, likely a docs / license, etc... change
+            pass
+        # TODO: Verify that only /bots or /problems have been changed
+        commit_sha = self.payload['pull_request']['head']['sha']
+        # TODO: Verify that a problem submission does not change the name of an existing problem.
+        # TODO:
+        # status = create_status(commit_sha, github_client, repo_name)
 
     @view_config(header="X-Github-Event:ping")
     def payload_push_ping(self):
@@ -164,12 +146,12 @@ def adhoc():
     #     print(repo.name)
 
 
-def create_status(commit_sha, github_client, repo_name):
+def create_status(commit_sha, github_client, repo_name, status):
     repo = github_client.get_repo(repo_name)
     commit = repo.get_commit(sha=commit_sha)
     # error, failure, pending, or success
     status = commit.create_status(
-        'pending',
+        status,
         description='Agent!! is being evaluated against sim v3.0',
         target_url='https://botleague.io/users/username/botname/this-evaluation',
         context='Deepdrive')
