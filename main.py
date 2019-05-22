@@ -92,6 +92,13 @@ class PayloadView(object):
             changed_filetypes.add(filetype)
         base_dirs = list(base_dirs)
         if base_dirs == [c.BOTS_DIR]:
+            user_dirs = list(user_dirs)
+            if len(user_dirs) > 1:
+                return ErrorResponse(
+                    'Can only submit bots for one user at a time')
+            if len(botname_dirs) > 1:
+                return ErrorResponse('Can only submit one bot at a time')
+            user_or_org = user_dirs[0]
             # Trigger bot evaluation
             eval_resp = \
                 bot_eval(changed_filenames, user_or_org, base_repo, head_repo)
