@@ -55,14 +55,10 @@ class PayloadView(object):
         return "nothing to pull request payload"  # or simple {}
 
     def process_pull_request_changes(self):
-        # print(self.payload['sender'])
-        ret_status = ''
-
         pull_request = self.payload['pull_request']
         head = pull_request['head']
         head_repo_name = head['repo']['full_name']
         head_repo = c.GITHUB_CLIENT.get_repo(head_repo_name)
-        user_or_org, repo_name = head_repo_name.split('/')
         base_repo_name = pull_request['base']['repo']['full_name']
         base_repo = c.GITHUB_CLIENT.get_repo(base_repo_name)
         pull_number = pull_request['number']
@@ -71,12 +67,26 @@ class PayloadView(object):
         changed_files = list(base_repo.get_pull(pull_number).get_files())
 
         base_dirs = set()
+        user_dirs = set()
+        botname_dirs = set()
         changed_filenames = []
         changed_filetypes = set()
         for changed_file in changed_files:
             filename = changed_file.filename
             changed_filenames.append(filename)
-            base_dir = filename.split('/')[0]
+            path_parts = filename.split('/')
+            base_dir = path_parts[0]
+            if base_dir == c.BOTS_DIR:
+                if len(path_parts) != 4:
+                    # Expect something like
+                    #   ['bots', username, botname, 'bot.json']
+                    return ErrorResponse('Malformed bot submission')
+                elif path_parts[-1] not in c.ALLOWED_BOT_FILENAMES:
+                    return ErrorResponse('%s not an allowed bot file name' %
+                                         path_parts[-1])
+                else:
+                    user_dirs.add(path_parts[1])
+                    botname_dirs.add(path_parts[2])
             base_dirs.add(base_dir)
             filetype = filename.split('.')[-1]
             changed_filetypes.add(filetype)
