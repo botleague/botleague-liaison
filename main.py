@@ -90,6 +90,7 @@ class PayloadView(object):
             base_dirs.add(base_dir)
             filetype = filename.split('.')[-1]
             changed_filetypes.add(filetype)
+
         base_dirs = list(base_dirs)
         if base_dirs == [c.BOTS_DIR]:
             user_dirs = list(user_dirs)
@@ -123,7 +124,8 @@ class PayloadView(object):
         commit_sha = self.payload['pull_request']['head']['sha']
         # TODO: Verify that a problem submission does not change the name of an existing problem.
         # TODO:
-        # status = create_status(commit_sha, github_client, repo_name)
+        status = create_status(commit_sha, c.GITHUB_CLIENT,
+                               base_repo_name, ret_status)
 
     @view_config(header="X-Github-Event:ping")
     def payload_push_ping(self):
@@ -132,9 +134,9 @@ class PayloadView(object):
 
 
 def diagnostics(request):
-    if c.GITHUB_TOKEN:
+    if GITHUB_TOKEN:
         return Response('I have a github token of length %r that starts '
-                        'with %s' % (len(c.GITHUB_TOKEN), c.GITHUB_TOKEN[:4]))
+                        'with %s' % (len(GITHUB_TOKEN), GITHUB_TOKEN[:4]))
     else:
         return Response('Not token found')
 
@@ -144,10 +146,10 @@ def root(request):
 
 
 def adhoc():
-    repo_name = 'deepdrive/botleague'
+    repo_name = 'botleague/botleague'
     commit_sha = 'ff075f40afe1e2545ee6cb8e029dc78c83b9f740'
 
-    github_client = Github(c.GITHUB_TOKEN)
+    github_client = Github(GITHUB_TOKEN)
 
     github.enable_console_debug_logging()
 
@@ -156,7 +158,7 @@ def adhoc():
     #
     # user_org = github_client.get_user('deepdrive')
 
-    status = create_status(commit_sha, github_client, repo_name)
+    status = create_status(commit_sha, github_client, repo_name, 'error')
 
     print(status)
     # Then play with your Github objects:
@@ -172,7 +174,7 @@ def create_status(commit_sha, github_client, repo_name, status):
         status,
         description='Agent!! is being evaluated against sim v3.0',
         target_url='https://botleague.io/users/username/botname/this-evaluation',
-        context='Deepdrive')
+        context='Botleague')
     return status
 
 
