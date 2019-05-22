@@ -4,7 +4,8 @@ import os
 from wsgiref.simple_server import make_server
 
 from bot_eval import bot_eval
-from error_response import ErrorResponse
+from botleague_helpers.constants import GITHUB_TOKEN
+from responses import ErrorResponse
 from pyramid.config import Configurator
 from pyramid.httpexceptions import HTTPClientError
 from pyramid.view import view_config, view_defaults
