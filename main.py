@@ -100,8 +100,8 @@ class PayloadView(object):
                 return ErrorResponse('Can only submit one bot at a time')
             user_or_org = user_dirs[0]
             # Trigger bot evaluation
-            eval_resp = \
-                bot_eval(changed_filenames, user_or_org, base_repo, head_repo)
+            eval_resp = bot_eval(changed_filenames, user_or_org,
+                                 base_repo, head_repo, pull_request)
             if isinstance(eval_resp, ErrorResponse):
                 ret_status = c.CI_STATUS_ERROR
             else:
