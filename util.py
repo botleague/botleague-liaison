@@ -1,3 +1,5 @@
+import json
+
 import constants as c
 
 import logging as log
@@ -15,5 +17,8 @@ def get_from_github(repo, filename):
     except UnknownObjectException:
         log.error('Unable to find %s in %s', filename, repo.html_url)
         content_str = ''
-    ret = content_str
+    if filename.endswith('.json') and content_str:
+        ret = json.loads(content_str)
+    else:
+        ret = content_str
     return ret
