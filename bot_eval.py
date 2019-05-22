@@ -72,7 +72,52 @@ def eval_bots_problems(base_repo, problem_ids, seed, bot_def, pull_request):
             return ErrorResponse('Problem does not exist %s' % problem_id)
         else:
             # Trigger the eval at the problem endpoint
-            endpoint = problem_def['endpoint']
-            eval_key = uuid.uuid4().hex
-            eval_data = dict(eval_key=eval_key, seed=seed)
-            requests.post(endpoint, json=eval_data)
+            trigger_eval(bot_def, problem_def, pull_request, responses, seed,
+                         problem_id)
+
+
+def trigger_eval(bot_def, problem_def, pull_request, responses, seed,
+                 problem_id):
+    endpoint = problem_def['endpoint']
+    eval_key = uuid.uuid4().hex
+    pull_number = pull_request['number']
+    pull_url = pull_request['url']
+    pull_request_updated_at = pull_request['updated_at']
+    merge_commit_sha = pull_request['merge_commit_sha']
+    head_commit = pull_request['head']['sha']
+    base_commit = pull_request['base']['sha']
+    head_full_name = pull_request['head']['repo']['full_name']
+    base_full_name = pull_request['base']['repo']['full_name']
+    now = time.time()
+    eval_data = dict(eval_key=eval_key,
+                     seed=seed,
+                     problem_id=problem_id,
+                     status=c.EVAL_STATUS_STARTED,
+                     created_at=now,
+                     pull_request=dict(
+                         url=pull_url,
+                         number=pull_number,
+                         updated_at=pull_request_updated_at,
+                         merge_commit_sha=merge_commit_sha,
+                         head_commit=head_commit,
+                         head_full_name=head_full_name,
+                         base_commit=base_commit,
+                         base_full_name=base_full_name,
+                     ),)
+    try:
+        resp = requests.post(endpoint, json=eval_data, timeout=10)
+    except requests.exceptions.Timeout:
+        responses.append(ErrorResponse(
+            'Endpoint %s took too long to respond' % endpoint))
+    else:
+        if resp.status_code != 200:
+            responses.append(ErrorResponse(
+                'Endpoint %s did not respond with success' % endpoint))
+        else:
+            kv = SimpleKeyValueStore()
+            db_key = '%s_%s' % (c.ONGOING_EVALUATIONS_KEY_PREFIX, eval_key)
+            kv.set(db_key, eval_data)
+            # TODO: Now we wait for a /confirm and /results request with the
+            #   eval_key
+            responses.append(StartedResponse('Started evaluation at %s' %
+                                             endpoint))
