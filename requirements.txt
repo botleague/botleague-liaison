@@ -1,4 +1,4 @@
-PyGithub#egg=github==1.43.6
+PyGithub==1.43.6
 pyramid==1.10.3
 firebase-admin==2.16.0
 google-cloud-firestore==0.32.1
