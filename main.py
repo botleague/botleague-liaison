@@ -48,7 +48,7 @@ class PayloadView(object):
         header HTTP-X-Github-Event type is Pull Request"""
         # {u'name': u'marioidival', u'email': u'marioidival@gmail.com'}
         action = self.payload['action']
-        if action == 'opened' or action == 'synchronize':
+        if action in ['opened', 'synchronize', 'reopened']:
             self.process_pull_request_changes()
 
         # do busy work...
