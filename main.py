@@ -122,6 +122,7 @@ class PayloadView(object):
         base_dirs = set()
         user_dirs = set()
         botname_dirs = set()
+        problem_dirs = set()
         changed_filenames = []
         changed_filetypes = set()
         err = None
@@ -136,17 +137,33 @@ class PayloadView(object):
                     # Expect something like
                     #   ['bots', username, botname, 'bot.json']
                     err = ErrorResponse('Malformed bot submission')
+                    break
                 elif path_parts[-1] not in c.ALLOWED_BOT_FILENAMES:
                     err = ErrorResponse('%s not an allowed bot file name' %
                                         path_parts[-1])
+                    break
                 elif changed_file.status == 'renamed':
                     err = ErrorResponse('Renaming bots currently not supported')
+                    break
                 else:
                     user_dirs.add(path_parts[1])
                     botname_dirs.add(path_parts[2])
             elif base_dir == c.PROBLEMS_DIR:
-                # TODO: Check for malformed problem submissions + allowed filenames
-                pass
+                if len(path_parts) != 3:
+                    # Expect something like
+                    #   ['problems', problem_id, 'problem.json']
+                    err = ErrorResponse('Malformed problem submission')
+                    break
+                elif path_parts[-1] not in c.ALLOWED_PROBLEM_FILENAMES:
+                    err = ErrorResponse('%s not an allowed bot file name' %
+                                        path_parts[-1])
+                    break
+                elif changed_file.status == 'renamed':
+                    err = ErrorResponse('Renaming problems currently '
+                                        'not supported')
+                    break
+                else:
+                    problem_dirs.add(path_parts[1])
             base_dirs.add(base_dir)
             filetype = filename.split('.')[-1]
             changed_filetypes.add(filetype)

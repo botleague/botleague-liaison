@@ -17,7 +17,7 @@ def bot_eval(changed_filenames, user_or_org, base_repo, head_repo,
     for filename in changed_filenames:
         if filename.endswith(c.BOT_DEFINITION_FILENAME):
             bot_def_filenames.append(filename)
-        elif filename.endswith(c.BOT_README_FILENAME):
+        elif filename.endswith(c.README_FILENAME):
             bot_readme_filenames.append(filename)
 
     # Do evaluations
