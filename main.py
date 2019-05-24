@@ -209,7 +209,8 @@ def adhoc():
     #
     # user_org = github_client.get_user('deepdrive')
 
-    status = create_status(commit_sha, github_client, repo_name, 'error')
+    status = create_status('error', 'error msg', commit_sha, github_client,
+                            repo_name)
 
     print(status)
     # Then play with your Github objects:
@@ -217,13 +218,13 @@ def adhoc():
     #     print(repo.name)
 
 
-def create_status(commit_sha, github_client, repo_name, status):
+def create_status(status, msg, commit_sha, github_client, repo_name):
     repo = github_client.get_repo(repo_name)
     commit = repo.get_commit(sha=commit_sha)
     # error, failure, pending, or success
     status = commit.create_status(
         status,
-        description='Agent!! is being evaluated against sim v3.0',
+        description=msg,
         target_url='https://botleague.io/users/username/botname/this-evaluation',
         context='Botleague')
     return status
