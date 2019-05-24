@@ -4,8 +4,10 @@ import os
 from wsgiref.simple_server import make_server
 
 from bot_eval import bot_eval
-from botleague_helpers.constants import GITHUB_TOKEN
-from responses import ErrorResponse
+from botleague_helpers.constants import GITHUB_TOKEN, SHOULD_GEN_KEY
+from botleague_helpers.key_value_store import SimpleKeyValueStore
+from responses import ErrorResponse, StartedResponse, RegenResponse, \
+    IgnoreResponse
 from pyramid.config import Configurator
 from pyramid.httpexceptions import HTTPClientError
 from pyramid.view import view_config, view_defaults
@@ -66,49 +68,27 @@ class PayloadView(object):
         # Get all the changed files in pull request
         changed_files = list(base_repo.get_pull(pull_number).get_files())
 
-        base_dirs = set()
-        user_dirs = set()
-        botname_dirs = set()
-        changed_filenames = []
-        changed_filetypes = set()
-        for changed_file in changed_files:
-            filename = changed_file.filename
-            changed_filenames.append(filename)
-            path_parts = filename.split('/')
-            base_dir = path_parts[0]
-            if base_dir == c.BOTS_DIR:
-                if len(path_parts) != 4:
-                    # Expect something like
-                    #   ['bots', username, botname, 'bot.json']
-                    return ErrorResponse('Malformed bot submission')
-                elif path_parts[-1] not in c.ALLOWED_BOT_FILENAMES:
-                    return ErrorResponse('%s not an allowed bot file name' %
-                                         path_parts[-1])
-                else:
-                    user_dirs.add(path_parts[1])
-                    botname_dirs.add(path_parts[2])
-            base_dirs.add(base_dir)
-            filetype = filename.split('.')[-1]
-            changed_filetypes.add(filetype)
+        (base_dirs,
+         botname_dirs,
+         changed_filenames,
+         changed_filetypes,
+         user_dirs,
+         err) = self.group_changed_files(changed_files)
 
-        base_dirs = list(base_dirs)
-        if base_dirs == [c.BOTS_DIR]:
-            user_dirs = list(user_dirs)
-            if len(user_dirs) > 1:
-                return ErrorResponse(
-                    'Can only submit bots for one user at a time')
-            if len(botname_dirs) > 1:
-                return ErrorResponse('Can only submit one bot at a time')
-            user_or_org = user_dirs[0]
-            # Trigger bot evaluation
-            eval_resp = bot_eval(changed_filenames, user_or_org,
-                                 base_repo, head_repo, pull_request)
-            if isinstance(eval_resp, ErrorResponse):
-                ret_status = c.CI_STATUS_ERROR
-            else:
-                ret_status = c.CI_STATUS_PENDING
+        should_gen = False
+        if err is not None:
+            ret_status = c.CI_STATUS_ERROR
+        elif base_dirs == [c.BOTS_DIR]:
+            # TODO: Verify that botnames and usernames have not been changed
+            #   We do this to avoid complicated migrations in the leaderboard
+            #   data. If someone changes their GitHub name, they will get a new
+            #   user for now.
+            resp, should_gen = self.process_changed_bot(
+                base_repo, botname_dirs, changed_filenames, head_repo,
+                pull_request, user_dirs, changed_filetypes)
         elif base_dirs == [c.PROBLEMS_DIR]:
             # Trigger problem CI
+            # TODO: Verify that a problem submission does not change the name of an existing problem.
             pass
         elif c.BOTS_DIR in base_dirs or c.PROBLEMS_DIR in base_dirs:
             # Fail pull request, say that only bots or problems can be changed
@@ -119,13 +99,84 @@ class PayloadView(object):
             pass
         else:
             # Allow the pull request, likely a docs / license, etc... change
-            pass
-        # TODO: Verify that only /bots or /problems have been changed
+            resp = IgnoreResponse('No leaderboard changes detected')
         commit_sha = self.payload['pull_request']['head']['sha']
-        # TODO: Verify that a problem submission does not change the name of an existing problem.
-        # TODO:
-        status = create_status(commit_sha, c.GITHUB_CLIENT,
-                               base_repo_name, ret_status)
+
+        if isinstance(resp, ErrorResponse):
+            ret_status = c.CI_STATUS_ERROR
+        elif isinstance(resp, StartedResponse):
+            ret_status = c.CI_STATUS_PENDING
+        elif isinstance(resp, RegenResponse):
+            ret_status = c.CI_STATUS_SUCCESS
+        else:
+            ret_status = c.CI_STATUS_SUCCESS
+
+        if should_gen:
+            SimpleKeyValueStore().set(SHOULD_GEN_KEY, True)
+
+        status = create_status(ret_status, resp.msg,
+                               commit_sha, c.GITHUB_CLIENT, base_repo_name, )
+
+    @staticmethod
+    def group_changed_files(changed_files):
+        base_dirs = set()
+        user_dirs = set()
+        botname_dirs = set()
+        changed_filenames = []
+        changed_filetypes = set()
+        err = None
+        for changed_file in changed_files:
+            filename = changed_file.filename
+            changed_filenames.append(filename)
+            path_parts = filename.split('/')
+            base_dir = path_parts[0]
+            err = None
+            if base_dir == c.BOTS_DIR:
+                if len(path_parts) != 4:
+                    # Expect something like
+                    #   ['bots', username, botname, 'bot.json']
+                    err = ErrorResponse('Malformed bot submission')
+                elif path_parts[-1] not in c.ALLOWED_BOT_FILENAMES:
+                    err = ErrorResponse('%s not an allowed bot file name' %
+                                        path_parts[-1])
+                elif changed_file.status == 'renamed':
+                    err = ErrorResponse('Renaming bots currently not supported')
+                else:
+                    user_dirs.add(path_parts[1])
+                    botname_dirs.add(path_parts[2])
+            elif base_dir == c.PROBLEMS_DIR:
+                # TODO: Check for malformed problem submissions + allowed filenames
+                pass
+            base_dirs.add(base_dir)
+            filetype = filename.split('.')[-1]
+            changed_filetypes.add(filetype)
+        base_dirs = list(base_dirs)
+        return (base_dirs, botname_dirs, changed_filenames,
+                changed_filetypes, user_dirs, err)
+
+    @staticmethod
+    def process_changed_bot(base_repo, botname_dirs, changed_filenames,
+                            head_repo, pull_request, user_dirs,
+                            changed_filetypes):
+        should_gen = False
+        user_dirs = list(user_dirs)
+        if len(user_dirs) > 1:
+            resp = ErrorResponse(
+                'Can only submit bots for one user at a time')
+        elif len(botname_dirs) > 1:
+            resp = ErrorResponse('Can only submit one bot at a time')
+        else:
+            user_or_org = user_dirs[0]
+            if ['md'] == list(changed_filetypes):
+                # Just a docs/readme change. Trigger leaderboard gen.
+                should_gen = True
+                resp = RegenResponse('Markdown only change detected, '
+                                     'regenerating leaderboards')
+            else:
+                # Trigger bot evaluation
+                resp = bot_eval(changed_filenames, user_or_org,
+                                base_repo, head_repo, pull_request)
+        return resp, should_gen
 
     @view_config(header="X-Github-Event:ping")
     def payload_push_ping(self):
