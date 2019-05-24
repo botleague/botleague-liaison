@@ -12,3 +12,10 @@ class ErrorResponse(Response):
 class StartedResponse(Response):
     pass
 
+
+class RegenResponse(Response):
+    pass
+
+
+class IgnoreResponse(Response):
+    pass
