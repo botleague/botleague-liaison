@@ -78,6 +78,7 @@ class PayloadView(object):
         should_gen = False
         if err is not None:
             ret_status = c.CI_STATUS_ERROR
+            resp = err
         elif base_dirs == [c.BOTS_DIR]:
             # TODO: Verify that botnames and usernames have not been changed
             #   We do this to avoid complicated migrations in the leaderboard
