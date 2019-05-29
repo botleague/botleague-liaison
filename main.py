@@ -3,9 +3,13 @@ from __future__ import print_function
 import os
 from wsgiref.simple_server import make_server
 
-from bot_eval import BotEval
+from box import Box
+
+from bot_eval import BotEval, process_changed_bot, process_pull_request_changes
 from botleague_helpers.constants import GITHUB_TOKEN, SHOULD_GEN_KEY
 from botleague_helpers.key_value_store import SimpleKeyValueStore
+
+from pr_processor import get_pr_processor
 from responses import ErrorResponse, StartedResponse, RegenResponse, \
     IgnoreResponse
 from pyramid.config import Configurator
@@ -51,155 +55,12 @@ class PayloadView(object):
         # {u'name': u'marioidival', u'email': u'marioidival@gmail.com'}
         action = self.payload['action']
         if action in ['opened', 'synchronize', 'reopened']:
-            self.process_pull_request_changes()
+            pr_processor = get_pr_processor()
+            pr_processor.pr_event = Box(self.payload.raw_data)
+            pr_processor.process_changes()
 
         # do busy work...
         return "nothing to pull request payload"  # or simple {}
-
-    def process_pull_request_changes(self):
-        pull_request = self.payload['pull_request']
-        head = pull_request['head']
-        head_repo_name = head['repo']['full_name']
-        head_repo = c.GITHUB_CLIENT.get_repo(head_repo_name)
-        base_repo_name = pull_request['base']['repo']['full_name']
-        base_repo = c.GITHUB_CLIENT.get_repo(base_repo_name)
-        pull_number = pull_request['number']
-
-        # Get all the changed files in pull request
-        changed_files = list(base_repo.get_pull(pull_number).get_files())
-
-        (base_dirs,
-         botname_dirs,
-         changed_filenames,
-         changed_filetypes,
-         user_dirs,
-         err) = self.group_changed_files(changed_files)
-
-        should_gen = False
-        if err is not None:
-            ret_status = c.CI_STATUS_ERROR
-            resp = err
-        elif base_dirs == [c.BOTS_DIR]:
-            # TODO: Verify that botnames and usernames have not been changed
-            #   We do this to avoid complicated migrations in the leaderboard
-            #   data. If someone changes their GitHub name, they will get a new
-            #   user for now.
-            resp, should_gen = self.process_changed_bot(
-                base_repo, botname_dirs, changed_filenames, head_repo,
-                pull_request, user_dirs, changed_filetypes)
-        elif base_dirs == [c.PROBLEMS_DIR]:
-            # Trigger problem CI
-            # TODO: Verify that a problem submission does not change the name of an existing problem.
-            pass
-        elif c.BOTS_DIR in base_dirs or c.PROBLEMS_DIR in base_dirs:
-            # Fail pull request, say that only bots or problems can be changed
-            pass
-        elif 'json' in changed_filetypes:
-            # Fail pull request. Unexpected files, json files should
-            # only be changed in the context of a bot or problem.
-            pass
-        else:
-            # Allow the pull request, likely a docs / license, etc... change
-            resp = IgnoreResponse('No leaderboard changes detected')
-        commit_sha = self.payload['pull_request']['head']['sha']
-
-        if isinstance(resp, ErrorResponse):
-            ret_status = c.CI_STATUS_ERROR
-        elif isinstance(resp, StartedResponse):
-            ret_status = c.CI_STATUS_PENDING
-        elif isinstance(resp, RegenResponse):
-            ret_status = c.CI_STATUS_SUCCESS
-        else:
-            ret_status = c.CI_STATUS_SUCCESS
-
-        if should_gen:
-            SimpleKeyValueStore().set(SHOULD_GEN_KEY, True)
-
-        status = create_status(ret_status, resp.msg,
-                               commit_sha, c.GITHUB_CLIENT, base_repo_name, )
-
-    @staticmethod
-    def group_changed_files(changed_files):
-        base_dirs = set()
-        user_dirs = set()
-        botname_dirs = set()
-        problem_dirs = set()
-        changed_filenames = []
-        changed_filetypes = set()
-        err = None
-        for changed_file in changed_files:
-            filename = changed_file.filename
-            changed_filenames.append(filename)
-            path_parts = filename.split('/')
-            base_dir = path_parts[0]
-            err = None
-            if base_dir == c.BOTS_DIR:
-                if len(path_parts) != 4:
-                    # Expect something like
-                    #   ['bots', username, botname, 'bot.json']
-                    err = ErrorResponse('Malformed bot submission')
-                    break
-                elif path_parts[-1] not in c.ALLOWED_BOT_FILENAMES:
-                    err = ErrorResponse('%s not an allowed bot file name' %
-                                        path_parts[-1])
-                    break
-                elif changed_file.status == 'renamed':
-                    err = ErrorResponse('Renaming bots currently not supported')
-                    break
-                else:
-                    user_dirs.add(path_parts[1])
-                    botname_dirs.add(path_parts[2])
-            elif base_dir == c.PROBLEMS_DIR:
-                if len(path_parts) != 3:
-                    # Expect something like
-                    #   ['problems', problem_id, 'problem.json']
-                    err = ErrorResponse('Malformed problem submission')
-                    break
-                elif path_parts[-1] not in c.ALLOWED_PROBLEM_FILENAMES:
-                    err = ErrorResponse('%s not an allowed bot file name' %
-                                        path_parts[-1])
-                    break
-                elif changed_file.status == 'renamed':
-                    err = ErrorResponse('Renaming problems currently '
-                                        'not supported')
-                    break
-                else:
-                    problem_dirs.add(path_parts[1])
-            base_dirs.add(base_dir)
-            filetype = filename.split('.')[-1]
-            changed_filetypes.add(filetype)
-        base_dirs = list(base_dirs)
-        return (base_dirs, botname_dirs, changed_filenames,
-                changed_filetypes, user_dirs, err)
-
-    @staticmethod
-    def process_changed_bot(base_repo, botname_dirs, changed_filenames,
-                            head_repo, pull_request, user_dirs,
-                            changed_filetypes):
-        should_gen = False
-        user_dirs = list(user_dirs)
-        if len(user_dirs) > 1:
-            resp = ErrorResponse(
-                'Can only submit bots for one user at a time')
-        elif len(botname_dirs) > 1:
-            resp = ErrorResponse('Can only submit one bot at a time')
-        else:
-            user_or_org = user_dirs[0]
-            botname = botname_dirs[0]
-            if ['md'] == list(changed_filetypes):
-                # Just a docs/readme change. Trigger leaderboard gen.
-                should_gen = True
-                resp = RegenResponse('Markdown only change detected, '
-                                     'regenerating leaderboards')
-            else:
-                # Trigger bot evaluation
-                evaluator = BotEval(botname=botname,
-                                    changed_filenames=changed_filenames,
-                                    user_or_org=user_or_org,
-                                    base_repo=base_repo, head_repo=head_repo,
-                                    pull_request=pull_request)
-                resp = evaluator.eval()
-        return resp, should_gen
 
     @view_config(header="X-Github-Event:ping")
     def payload_push_ping(self):
@@ -239,18 +100,6 @@ def adhoc():
     # Then play with your Github objects:
     # for repo in github_client.get_user().get_repos():
     #     print(repo.name)
-
-
-def create_status(status, msg, commit_sha, github_client, repo_name):
-    repo = github_client.get_repo(repo_name)
-    commit = repo.get_commit(sha=commit_sha)
-    # error, failure, pending, or success
-    status = commit.create_status(
-        status,
-        description=msg,
-        target_url='https://botleague.io/users/username/botname/this-evaluation',
-        context='Botleague')
-    return status
 
 
 # `app` needs to be global to work with App Engine

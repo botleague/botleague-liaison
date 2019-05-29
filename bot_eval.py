@@ -3,22 +3,26 @@ import time
 import uuid
 from typing import List
 
+from box import Box
+
 import constants as c
 import github
 import requests
+from botleague_helpers.constants import SHOULD_GEN_KEY
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 from github import Repository
-from responses import ErrorResponse, StartedResponse
-from util import get_from_github
+from responses import ErrorResponse, StartedResponse, RegenResponse, \
+    IgnoreResponse
+from tests.mockable import Mockable
 
 
-class BotEval:
+class BotEvalBase:
     botname: str
     changed_filenames: List[str]
     user_or_org: str
     base_repo: Repository
     head_repo: Repository
-    pr: dict
+    pr_event: Box
     seed: int
 
     def __init__(self, botname, changed_filenames, user_or_org, base_repo,
@@ -28,7 +32,7 @@ class BotEval:
         self.user_or_org = user_or_org
         self.base_repo = base_repo
         self.head_repo = head_repo
-        self.pr = pull_request
+        self.pr_event = pull_request
         self.seed = random.choice(range(1, 10 ** 6))
 
     def eval(self):
@@ -57,7 +61,7 @@ class BotEval:
         # TODO: Handle cases where only readme changes
 
     def eval_bot(self, bot_def_filename):
-        bot_def = get_from_github(self.head_repo, bot_def_filename)
+        bot_def = self.github_get(self.head_repo, bot_def_filename)
         source_commit = bot_def['source_commit']
 
         github_prefix = 'https://github.com/'
@@ -88,7 +92,7 @@ class BotEval:
             problem_def_url = '%s/%s/%s' % (c.PROBLEMS_DIR, problem_id,
                                             c.PROBLEM_DEFINITION_FILENAME)
             # Ensure the problem exists
-            problem_def = get_from_github(base_repo, problem_def_url)
+            problem_def = self.github_get(self.base_repo, problem_def_url)
             if not problem_def:
                 # Problem does not exist
                 return ErrorResponse('Problem does not exist %s' % problem_id)
@@ -99,14 +103,14 @@ class BotEval:
     def trigger_eval(self, bot_def, problem_def, problem_id, responses):
         endpoint = problem_def['endpoint']
         eval_key = uuid.uuid4().hex
-        pull_number = self.pr['number']
-        pull_url = self.pr['url']
-        pull_request_updated_at = self.pr['updated_at']
-        merge_commit_sha = self.pr['merge_commit_sha']
-        head_commit = self.pr['head']['sha']
-        base_commit = self.pr['base']['sha']
-        head_full_name = self.pr['head']['repo']['full_name']
-        base_full_name = self.pr['base']['repo']['full_name']
+        pull_number = self.pr_event.number
+        pull_url = self.pr_event.url
+        pull_request_updated_at = self.pr_event.updated_at
+        merge_commit_sha = self.pr_event.merge_commit_sha
+        head_commit = self.pr_event.head.sha
+        base_commit = self.pr_event.base.sha
+        head_full_name = self.pr_event.head.repo.full_name
+        base_full_name = self.pr_event.base.repo.full_name
         now = time.time()
         eval_data = dict(eval_key=eval_key,
                          seed=self.seed,
@@ -144,10 +148,12 @@ class BotEval:
                 responses.append(StartedResponse('Started evaluation at %s' %
                                                  endpoint))
 
-
     def handle_results(results):
+        """
+        Handles results POSTS from problem evaluators at the
+        """
         # TODO: Test locally generated results.json by transforming it to required
-        #   format - pull eval info using eval_key
+        #   format - pull eval info from KV store using eval_key
         #   Add:
         #   - username
         #   - botname
@@ -159,3 +165,57 @@ class BotEval:
         #   -
 
         pass
+
+    def github_get(self, repo, filename):
+        raise NotImplementedError()
+
+
+class BotEval(BotEvalBase):
+    def github_get(self, repo, filename):
+        from util import get_from_github
+        return get_from_github(repo, filename)
+
+
+class BotEvalMock(BotEvalBase, Mockable):
+    pass
+
+
+def get_bot_eval():
+    if c.IS_TEST:
+        return BotEvalMock
+    else:
+        return BotEval
+
+
+def process_changed_bot(base_repo, botname_dirs, changed_filenames,
+                        head_repo, pull_request, user_dirs,
+                        changed_filetypes):
+    should_gen = False
+    user_dirs = list(user_dirs)
+    if len(user_dirs) > 1:
+        resp = ErrorResponse(
+            'Can only submit bots for one user at a time')
+    elif len(botname_dirs) > 1:
+        resp = ErrorResponse('Can only submit one bot at a time')
+    else:
+        user_or_org = user_dirs[0]
+        botname = botname_dirs[0]
+        if ['md'] == list(changed_filetypes):
+            # Just a docs/readme change. Trigger leaderboard gen.
+            should_gen = True
+            resp = RegenResponse('Markdown only change detected, '
+                                 'regenerating leaderboards')
+        else:
+            # Trigger bot evaluation
+            evaluator = get_bot_eval()(
+                botname=botname,
+                changed_filenames=changed_filenames,
+                user_or_org=user_or_org,
+                base_repo=base_repo, head_repo=head_repo,
+                pull_request=pull_request)
+            resp = evaluator.eval()
+    return resp, should_gen
+
+
+
+

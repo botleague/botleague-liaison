@@ -1,12 +1,18 @@
 import os
 
-# TODO: Move this and key_value_store into shared botleague-gcp pypi package
+ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+IS_TEST = 'IS_TEST' in os.environ
+SHOULD_MOCK_GITHUB = 'SHOULD_MOCK_GITHUB' in os.environ
 
 # For local testing, set SHOULD_USE_FIRESTORE=false in your environment
-from botleague_helpers.constants import GITHUB_TOKEN
-from github import Github
-
-GITHUB_CLIENT = Github(GITHUB_TOKEN)
+if SHOULD_MOCK_GITHUB:
+    GITHUB_TOKEN = None
+    GITHUB_CLIENT = None
+else:
+    from botleague_helpers.constants import GITHUB_TOKEN
+    from github import Github
+    GITHUB_CLIENT = Github(GITHUB_TOKEN)
 BOTS_DIR = 'bots'
 PROBLEMS_DIR = 'problems'
 PROBLEM_DEFINITION_FILENAME = 'problem.json'
@@ -25,3 +31,8 @@ ONGOING_EVALUATIONS_KEY_PREFIX = 'botleague_eval'
 
 ALLOWED_BOT_FILENAMES = [BOT_DEFINITION_FILENAME, README_FILENAME]
 ALLOWED_PROBLEM_FILENAMES = [PROBLEM_DEFINITION_FILENAME, README_FILENAME]
+
+SHOULD_RECORD = 'SHOULD_RECORD' in os.environ
+
+# Error messages
+RENAME_PROBLEM_ERROR_MSG = 'Renaming problems currently not supported'
