@@ -3,7 +3,7 @@ from __future__ import print_function
 import os
 from wsgiref.simple_server import make_server
 
-from bot_eval import bot_eval
+from bot_eval import BotEval
 from botleague_helpers.constants import GITHUB_TOKEN, SHOULD_GEN_KEY
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 from responses import ErrorResponse, StartedResponse, RegenResponse, \
@@ -185,6 +185,7 @@ class PayloadView(object):
             resp = ErrorResponse('Can only submit one bot at a time')
         else:
             user_or_org = user_dirs[0]
+            botname = botname_dirs[0]
             if ['md'] == list(changed_filetypes):
                 # Just a docs/readme change. Trigger leaderboard gen.
                 should_gen = True
@@ -192,8 +193,12 @@ class PayloadView(object):
                                      'regenerating leaderboards')
             else:
                 # Trigger bot evaluation
-                resp = bot_eval(changed_filenames, user_or_org,
-                                base_repo, head_repo, pull_request)
+                evaluator = BotEval(botname=botname,
+                                    changed_filenames=changed_filenames,
+                                    user_or_org=user_or_org,
+                                    base_repo=base_repo, head_repo=head_repo,
+                                    pull_request=pull_request)
+                resp = evaluator.eval()
         return resp, should_gen
 
     @view_config(header="X-Github-Event:ping")
