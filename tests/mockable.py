@@ -1,23 +1,16 @@
-import inspect
-import os
 from os.path import join
 
+from botleague_helpers.config import get_test_name_from_callstack
+
 from tests.test_constants import DATA_DIR
-from util import get_str_or_json, read_file
+from util import read_file, get_str_or_json
 
 
 class Mockable:
-    test_name: str
+    test_name: str = None
 
     def __init__(self):
-        for level in inspect.stack():
-            fn = level.function
-            test_prefix = 'test_'
-            if fn.startswith(test_prefix):
-                self.test_name = fn[len(test_prefix):]
-                break
-        else:
-            self.test_name = None
+        self.test_name = get_test_name_from_callstack()
 
     def github_get(self, repo, filename):
         filepath = self.get_test_filename(filename)

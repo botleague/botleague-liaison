@@ -42,6 +42,7 @@ def read_json(filename):
         results = json.load(file)
     return results
 
+
 def write_file(content, path):
     with open(path, 'w') as f:
         f.write(content)
