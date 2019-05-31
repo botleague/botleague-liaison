@@ -8,7 +8,7 @@ from box import Box
 import constants as c
 import github
 import requests
-from botleague_helpers.constants import SHOULD_GEN_KEY
+from botleague_helpers.config import blconfig
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 from github import Repository
 from responses import ErrorResponse, StartedResponse, RegenResponse, \

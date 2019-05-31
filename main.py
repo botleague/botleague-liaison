@@ -6,7 +6,7 @@ from wsgiref.simple_server import make_server
 from box import Box
 
 from bot_eval import BotEval, process_changed_bot, process_pull_request_changes
-from botleague_helpers.constants import GITHUB_TOKEN, SHOULD_GEN_KEY
+from botleague_helpers.config import blconfig
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 
 from pr_processor import get_pr_processor
@@ -69,9 +69,10 @@ class PayloadView(object):
 
 
 def diagnostics(request):
-    if GITHUB_TOKEN:
+    tok = blconfig.github_token
+    if tok:
         return Response('I have a github token of length %r that starts '
-                        'with %s' % (len(GITHUB_TOKEN), GITHUB_TOKEN[:4]))
+                        'with %s' % (len(tok), tok[:4]))
     else:
         return Response('Not token found')
 
@@ -84,7 +85,7 @@ def adhoc():
     repo_name = 'botleague/botleague'
     commit_sha = 'ff075f40afe1e2545ee6cb8e029dc78c83b9f740'
 
-    github_client = Github(GITHUB_TOKEN)
+    github_client = Github(blconfig.github_token)
 
     github.enable_console_debug_logging()
 

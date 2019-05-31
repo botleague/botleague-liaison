@@ -8,7 +8,7 @@ from box import Box
 
 import util
 from bot_eval import process_changed_bot
-from botleague_helpers.config import c, get_test_name_from_callstack
+from botleague_helpers.config import blconfig, get_test_name_from_callstack
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 from responses import ErrorResponse, StartedResponse, RegenResponse, \
     IgnoreResponse
