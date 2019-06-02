@@ -18,13 +18,17 @@ def test_move_plus_modify():
     resp, status = pr_processor.process_changes()
     assert isinstance(resp, ErrorResponse)
     assert resp.msg == constants.RENAME_PROBLEM_ERROR_MSG
+    # TODO: assert much more here
 
 
-def test_start_bot_eval():
+def test_bot_eval():
     pr_processor = PrProcessorMock()
     resp, status = pr_processor.process_changes()
     assert isinstance(resp[0], EvalStartedResponse)
+    # TODO: assert much more here
 
 
-def record_pr_event():
+
+def test_asdf():
     pass
+

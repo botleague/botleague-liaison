@@ -81,8 +81,6 @@ class BotEvalBase:
         # TODO: Get the botname from the JSON commit path. It does not have to match
         #   the source_commit, i.e. deepdrive agents.
 
-        # TODO: Move bot readme to botleague (not in the source repo),
-        #   as some bots may just bot docker containers.
         if source_commit_user.lower() != self.user_or_org.lower():
             return ErrorResponse('Bot directory does not match user or org name'
                                  'on source repo, aborting')
@@ -105,22 +103,23 @@ class BotEvalBase:
                                       problem_id))
             else:
                 # Trigger the eval at the problem endpoint
-                responses.append(self.trigger_eval(bot_def, problem_def,
-                                                   problem_id))
+                responses.append(self.trigger_single_eval(bot_def, problem_def,
+                                                          problem_id))
         return responses
 
-    def trigger_eval(self, bot_def, problem_def, problem_id) -> Response:
+    def trigger_single_eval(self, bot_def, problem_def, problem_id) -> Response:
         endpoint = problem_def.endpoint
         eval_key = uuid.uuid4().hex
-        eval_data = self.get_eval_data(eval_key, problem_id)
-        resp = self.request_eval(endpoint, eval_data, eval_key)
+        eval_id = uuid.uuid4().hex
+        eval_data = self.get_eval_data(eval_id, eval_key, problem_id)
+        resp = self.request_eval(endpoint, eval_data)
         return resp
 
     @staticmethod
-    def request_eval(endpoint, eval_data, eval_key) -> Response:
+    def request_eval(endpoint, eval_data) -> Response:
         raise NotImplementedError()
 
-    def get_eval_data(self, eval_key, problem_id):
+    def get_eval_data(self, eval_id, eval_key, problem_id) -> Box:
         pull_number = self.pr_event.number
         pull_url = self.pr_event.url
         pull_request_updated_at = self.pr_event.updated_at
@@ -130,7 +129,8 @@ class BotEvalBase:
         head_full_name = self.pr_event.head.repo.full_name
         base_full_name = self.pr_event.base.repo.full_name
         now = time.time()
-        eval_data = dict(eval_key=eval_key,
+        eval_data = Box(eval_key=eval_key,
+                         eval_id=eval_id,
                          seed=self.seed,
                          problem_id=problem_id,
                          botname=self.botname,
@@ -149,10 +149,13 @@ class BotEvalBase:
                          ), )
         return eval_data
 
-    def handle_results(self, results):
+    def handle_results(self, eval_key: str, results: Box):
         """
         Handles results POSTS from problem evaluators at the
         """
+        # Get the eval_data using the result.eval_key
+
+        
         # TODO: Test locally generated results.json by transforming it to required
         #   format - pull eval info from KV store using eval_key
         #   Add:
@@ -180,27 +183,30 @@ class BotEval(BotEvalBase):
         return get_from_github(repo, filename)
 
     @staticmethod
-    def request_eval(endpoint, eval_data, eval_key) -> Response:
+    def request_eval(endpoint: str, eval_data: Box) -> Response:
         try:
-            resp = requests.post(endpoint, json=eval_data, timeout=10)
+            endpoint_resp = requests.post(endpoint, json=eval_data.to_json(),
+                                          timeout=10)
         except requests.exceptions.Timeout:
-            resp = EvalErrorResponse(
+            endpoint_resp = EvalErrorResponse(
                 'Endpoint %s took too long to respond' % endpoint)
         else:
             # Yay, we did not timeout!
-            if resp.status_code != 200:
-                resp = EvalErrorResponse(
-                    'Endpoint %s did not respond with success' % endpoint)
+            if endpoint_resp.status_code != 200:
+                ret = EvalErrorResponse(
+                    'Endpoint %s failed with HTTP %r, response body was %s'
+                    % (endpoint, endpoint_resp.status_code,
+                       endpoint_resp.content))
             else:
                 kv = SimpleKeyValueStore()
                 db_key = '%s_%s' % (constants.ONGOING_EVALUATIONS_KEY_PREFIX,
-                                    eval_key)
+                                    eval_data.eval_key)
                 kv.set(db_key, eval_data)
                 # TODO: Now we wait for a /confirm and /results request with the
                 #   eval_key
-                resp = EvalStartedResponse('Started evaluation at %s' %
+                ret = EvalStartedResponse('Started evaluation at %s' %
                                            endpoint)
-        return resp
+        return endpoint_resp
 
 
 class BotEvalMock(BotEvalBase, Mockable):
@@ -214,7 +220,8 @@ class BotEvalMock(BotEvalBase, Mockable):
         return ret
 
     @staticmethod
-    def request_eval(endpoint, eval_data, eval_key) -> Response:
+    def request_eval(endpoint, eval_data, eval_key, eval_id) -> Response:
+        assert eval_key != eval_id
         return EvalStartedResponse('Mock eval - nothing happening.')
 
 
