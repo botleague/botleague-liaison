@@ -1,5 +1,5 @@
 from os.path import join
-from typing import List
+from typing import List, Union
 
 import logging as log
 
@@ -11,9 +11,10 @@ from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 from responses import ErrorResponse, StartedResponse, RegenResponse, \
-    IgnoreResponse
+    IgnoreResponse, Response, EvalStartedResponse, EvalErrorResponse
 import constants
 from tests.mockable import Mockable
+from tests.test_constants import CHANGED_FILES_FILENAME
 from util import read_json
 
 log.basicConfig(level=log.INFO)
@@ -24,10 +25,12 @@ class PrProcessorBase:
     head_repo: github.Repository = None
     pull_number: int = -1
     pr_event: Box
+    changed_files: List[Box]
     _github_client: github.Github = None
 
-    def __init__(self):
-        super().__init__()  # Support multiple inheritance
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)  # Support multiple inheritance
+        self.is_mock = isinstance(self, Mockable)
 
     def process_changes(self):
         pull_request = self.pr_event.pull_request
@@ -39,23 +42,67 @@ class PrProcessorBase:
         self.pull_number = pull_request.number
 
         # Get all the changed files in a pull request
-        changed_files = self.get_changed_files()
+        self.changed_files = self.get_changed_files()
 
         (base_dirs,
          botname_dirs,
          changed_filenames,
          changed_filetypes,
          user_dirs,
-         err) = group_changed_files(changed_files)
+         err) = group_changed_files(self.changed_files)
 
         should_gen = False
+        resp, should_gen = self.dispatch(base_dirs, botname_dirs,
+                                         changed_filenames, changed_filetypes,
+                                         err, pull_request, should_gen,
+                                         user_dirs)
+        commit_sha = self.pr_event.pull_request.head.sha
+
+        if should_gen:
+            SimpleKeyValueStore().set(blconfig.should_gen_key, True)
+
+        status = self.create_status(resp, commit_sha, self.github_client,
+                                    base_repo_name)
+        return resp, status
+
+    @staticmethod
+    def get_ci_resp(resp) -> (str, str):
+        if isinstance(resp, Response):
+            msg = resp.msg
+            if isinstance(resp, ErrorResponse):
+                status = constants.CI_STATUS_ERROR
+            elif isinstance(resp, StartedResponse):
+                status = constants.CI_STATUS_PENDING
+            elif isinstance(resp, RegenResponse):
+                status = constants.CI_STATUS_SUCCESS
+            elif isinstance(resp, IgnoreResponse):
+                status = constants.CI_STATUS_SUCCESS
+            else:
+                raise RuntimeError('Unexpected response type')
+        elif isinstance(resp, list):
+            # We've fanned out a number of eval requests 1->N,
+            # Ensure they've all succeeded.
+            msg = '\n'.join([r.msg for r in resp])
+            if any(isinstance(r, EvalErrorResponse) for r in resp):
+                status = constants.CI_STATUS_ERROR
+            elif all(isinstance(r, EvalStartedResponse) for r in resp):
+                status = constants.CI_STATUS_PENDING
+            else:
+                raise RuntimeError('Unexpected type for eval response')
+        else:
+            raise RuntimeError('Unexpected response format')
+        return status, msg
+
+    def dispatch(self, base_dirs, botname_dirs, changed_filenames,
+                 changed_filetypes, err, pull_request, should_gen,
+                 user_dirs) -> (Union[Response, List[Response]], bool):
         if err is not None:
-            ret_status = constants.CI_STATUS_ERROR
             resp = err
         elif base_dirs == [constants.BOTS_DIR]:
             resp, should_gen = process_changed_bot(
                 self.base_repo, botname_dirs, changed_filenames, self.head_repo,
-                pull_request, user_dirs, changed_filetypes)
+                pull_request, user_dirs, changed_filetypes,
+                from_mock=self.is_mock)
         elif base_dirs == [constants.PROBLEMS_DIR]:
             # Trigger problem CI
             # TODO: Verify that a problem submission does not change the name of
@@ -78,27 +125,10 @@ class PrProcessorBase:
         else:
             # Allow the pull request, likely a docs / license, etc... change
             resp = IgnoreResponse('No leaderboard changes detected')
-        commit_sha = self.pr_event.pull_request.head.sha
-
-        if isinstance(resp, ErrorResponse):
-            ret_status = constants.CI_STATUS_ERROR
-        elif isinstance(resp, StartedResponse):
-            ret_status = constants.CI_STATUS_PENDING
-        elif isinstance(resp, RegenResponse):
-            ret_status = constants.CI_STATUS_SUCCESS
-        else:
-            ret_status = constants.CI_STATUS_SUCCESS
-
-        if should_gen:
-            SimpleKeyValueStore().set(c.should_gen_key, True)
-
-        status = self.create_status(
-            ret_status, resp.msg, commit_sha, self.github_client,
-            base_repo_name)
-        return resp
+        return resp, should_gen
 
     @staticmethod
-    def create_status(status, msg, commit_sha, github_client, repo_name):
+    def create_status(resp, commit_sha, github_client, repo_name):
         raise NotImplementedError()
 
     @staticmethod
@@ -114,32 +144,36 @@ class PrProcessorBase:
 
 
 class PrProcessor(PrProcessorBase):
-    def __init__(self, pr):
+    def __init__(self, pr_event):
         if get_test_name_from_callstack():
             raise RuntimeError('Should not be using this class in tests!')
         super().__init__()
-        self.pr = pr
+        self.pr_event = pr_event
 
-    def get_changed_files(self):
-        ret = list(self.base_repo.get_pull(self.pull_number).get_files())
-        ret = [Box(r.raw_data) for r in ret]
-        if constants.SHOULD_RECORD:
-            util.write_json(ret, join(constants.ROOT_DIR,
-                                      'recorded-changed-files.json'))
-        return ret
+    def get_changed_files(self) -> List[Box]:
+        if self.changed_files is not None:
+            ret = list(self.base_repo.get_pull(self.pull_number).get_files())
+            ret = [Box(r.raw_data) for r in ret]
+            self.changed_files = ret
+        return self.changed_files
 
     def get_repo(self, repo_name):
         return self.github_client.get_repo(repo_name)
 
-    @staticmethod
-    def create_status(status, msg, commit_sha, github_client, repo_name):
+    def create_status(self, resp, commit_sha, github_client, repo_name):
+        status, msg = self.get_ci_resp(resp)
         repo = github_client.get_repo(repo_name)
         commit = repo.get_commit(sha=commit_sha)
-        # error, failure, pending, or success
+
+        # status can be error, failure, pending, or success
+
         status = commit.create_status(
             status,
             description=msg,
+
+            # TODO
             target_url='https://botleague.io/users/username/botname/this-evaluation',
+
             context='Botleague')
         return status
 
@@ -147,17 +181,17 @@ class PrProcessor(PrProcessorBase):
     def github_client(self):
         if PrProcessor._github_client is None:
             # Lazy load class variable. Note this doesn't affect the base class
-            PrProcessor._github_client = github.Github(c.github_token)
+            PrProcessor._github_client = github.Github(blconfig.github_token)
         return PrProcessor._github_client
 
 
 class PrProcessorMock(PrProcessorBase, Mockable):
     def __init__(self):
         super().__init__()
-        self.pr_event = Box(read_json(self.get_test_filename('pr_event.json')))
+        self.pr_event = self.get_pr_event()
 
     def get_changed_files(self):
-        files = read_json(self.get_test_filename('changed-files.json'))
+        files = read_json(self.get_test_filename(CHANGED_FILES_FILENAME))
         ret = [Box(f) for f in files]
         return ret
 
@@ -166,7 +200,7 @@ class PrProcessorMock(PrProcessorBase, Mockable):
         return None
 
     @staticmethod
-    def create_status(status, msg, commit_sha, github_client, repo_name):
+    def create_status(resp, commit_sha, github_client, repo_name):
         return None
 
     @property
@@ -175,7 +209,7 @@ class PrProcessorMock(PrProcessorBase, Mockable):
 
 
 def get_pr_processor(pr_event=None) -> PrProcessorBase:
-    if c.is_test:
+    if blconfig.is_test:
         # This is a guard rail, you should just use the mock constructor in
         # tests
         ret = PrProcessorMock()
@@ -237,5 +271,14 @@ def group_changed_files(changed_files):
         filetype = filename.split('.')[-1]
         changed_filetypes.add(filetype)
     base_dirs = list(base_dirs)
-    return (base_dirs, botname_dirs, changed_filenames,
-            changed_filetypes, user_dirs, err)
+    pre_ret = (base_dirs, botname_dirs, changed_filenames,
+               changed_filetypes, user_dirs, err)
+
+    ret = []
+    for item in pre_ret:
+        if isinstance(item, set):
+            ret.append(list(item))
+        else:
+            ret.append(item)
+    return ret
+

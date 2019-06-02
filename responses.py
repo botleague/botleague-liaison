@@ -19,3 +19,11 @@ class RegenResponse(Response):
 
 class IgnoreResponse(Response):
     pass
+
+
+class EvalStartedResponse(StartedResponse):
+    pass
+
+
+class EvalErrorResponse(ErrorResponse):
+    pass

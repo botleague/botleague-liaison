@@ -3,21 +3,27 @@
 
 import constants
 from pr_processor import PrProcessorMock
-from responses import ErrorResponse, StartedResponse
+from responses import ErrorResponse, StartedResponse, EvalStartedResponse
+
+from botleague_helpers.config import activate_test_mode, blconfig
+
+activate_test_mode()  # So don't import this module from non-test code!
+
+# Being paranoid
+assert blconfig.is_test
 
 
 def test_move_plus_modify():
     pr_processor = PrProcessorMock()
-    resp = pr_processor.process_changes()
+    resp, status = pr_processor.process_changes()
     assert isinstance(resp, ErrorResponse)
     assert resp.msg == constants.RENAME_PROBLEM_ERROR_MSG
 
 
 def test_start_bot_eval():
     pr_processor = PrProcessorMock()
-    resp = pr_processor.process_changes()
-    assert isinstance(resp, StartedResponse)
-    assert resp.msg == constants.RENAME_PROBLEM_ERROR_MSG
+    resp, status = pr_processor.process_changes()
+    assert isinstance(resp[0], EvalStartedResponse)
 
 
 def record_pr_event():
