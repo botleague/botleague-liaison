@@ -1,7 +1,9 @@
 import json
 import os
 import os.path as p
+from secrets import choice
 
+from box import Box
 
 import constants as c
 
@@ -20,13 +22,13 @@ def get_from_github(repo, filename):
     except UnknownObjectException:
         log.error('Unable to find %s in %s', filename, repo.html_url)
         content_str = ''
-    ret = get_str_or_json(content_str, filename)
+    ret = get_str_or_box(content_str, filename)
     return ret
 
 
-def get_str_or_json(content_str, filename):
+def get_str_or_box(content_str, filename):
     if filename.endswith('.json') and content_str:
-        ret = json.loads(content_str)
+        ret = Box(json.loads(content_str))
     else:
         ret = content_str
     return ret
@@ -41,7 +43,6 @@ def read_json(filename):
     with open(filename) as file:
         results = json.load(file)
     return results
-
 
 def write_file(content, path):
     with open(path, 'w') as f:
@@ -76,3 +77,9 @@ def is_docker():
         os.path.isfile(path) and any('docker' in line for line in open(path))
     )
 
+
+def generate_rand_alphanumeric(num_chars):
+    import string
+    alphabet = string.ascii_uppercase + string.digits
+    ret = ''.join(choice(alphabet) for _ in range(num_chars))
+    return ret

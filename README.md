@@ -3,6 +3,10 @@
 GAE app that consumes github hooks, triggers Botleague evaluations, 
 and handles their results
 
+## Run tests
+
+pytest tests/*
+
 ## Running locally
 
 ! Don't install PyCharm's App Engine support ! Just run it as a normal Python project.
