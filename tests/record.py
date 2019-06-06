@@ -15,7 +15,7 @@ disable_firestore_access()
 
 
 def record_start_bot_eval():
-    test_name = 'start_bot_eval'
+    test_name = 'bot_eval'
     pr_event = Mockable.get_pr_event_from_test_name(test_name)
     record_changed_files(pr_event, test_name)
 
