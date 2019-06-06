@@ -238,5 +238,14 @@ def group_changed_files(changed_files):
         filetype = filename.split('.')[-1]
         changed_filetypes.add(filetype)
     base_dirs = list(base_dirs)
-    return (base_dirs, botname_dirs, changed_filenames,
-            changed_filetypes, user_dirs, err)
+    pre_ret = (base_dirs, botname_dirs, changed_filenames,
+               changed_filetypes, user_dirs, err)
+
+    ret = []
+    for item in pre_ret:
+        if isinstance(item, set):
+            ret.append(list(item))
+        else:
+            ret.append(item)
+    return ret
+
