@@ -156,7 +156,7 @@ class PrProcessor(PrProcessorBase):
 class PrProcessorMock(PrProcessorBase, Mockable):
     def __init__(self):
         super().__init__()
-        self.pr_event = Box(read_json(self.get_test_filename('pr_event.json')))
+        self.pr_event = self.get_pr_event()
 
     def get_changed_files(self):
         files = read_json(self.get_test_filename('changed-files.json'))
