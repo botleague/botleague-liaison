@@ -1,0 +1,14 @@
+[
+  {
+    "sha": "34744421554e40cefc4614591bde098f407b5cae",
+    "filename": "bots/deepdrive/forward-agent/bot.json",
+    "status": "modified",
+    "additions": 1,
+    "deletions": 1,
+    "changes": 2,
+    "blob_url": "https://github.com/botleague/botleague/blob/2af6da04a51a42ea1bb0fb705d66d87e53102678/bots/crizcraig/forward-agent/bot.json",
+    "raw_url": "https://github.com/botleague/botleague/raw/2af6da04a51a42ea1bb0fb705d66d87e53102678/bots/crizcraig/forward-agent/bot.json",
+    "contents_url": "https://api.github.com/repos/botleague/botleague/contents/bots/crizcraig/forward-agent/bot.json?ref=2af6da04a51a42ea1bb0fb705d66d87e53102678",
+    "patch": "@@ -1,6 +1,6 @@\n {\n   \"$comment-SOURCE-COMMIT\": \"Link to specific github commit. README.md's in source repo are rendered on the leaderboards. Dockerfiles must be present in the source repo and building should be instant after pulling the docker_tag\",\n-  \"source_commit\": \"https://github.com/crizCraig/forward-agent/commit/eefc93d95944099d3e61cda6542bb4ffe7a28abf\",\n+  \"source_commit\": \"https://github.com/crizCraig/forward-agent/commit/fefc93d95944099d3e61cda6542bb4ffe7a28abf\",\n \n \n   \"$comment-PROBLEMS\": \"This is the list of problems your bot will be ranked on. If you wish to be ranked on a challenge, include all of the problems in that challenge here. Think of these problems as the skills your bot is trained to exhibit.\","
+  }
+]

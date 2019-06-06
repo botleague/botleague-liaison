@@ -1,0 +1,22 @@
+[
+  {
+    "login": "crizCraig",
+    "id": 181225,
+    "node_id": "MDQ6VXNlcjE4MTIyNQ==",
+    "avatar_url": "https://avatars1.githubusercontent.com/u/181225?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/crizCraig",
+    "html_url": "https://github.com/crizCraig",
+    "followers_url": "https://api.github.com/users/crizCraig/followers",
+    "following_url": "https://api.github.com/users/crizCraig/following{/other_user}",
+    "gists_url": "https://api.github.com/users/crizCraig/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/crizCraig/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/crizCraig/subscriptions",
+    "organizations_url": "https://api.github.com/users/crizCraig/orgs",
+    "repos_url": "https://api.github.com/users/crizCraig/repos",
+    "events_url": "https://api.github.com/users/crizCraig/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/crizCraig/received_events",
+    "type": "User",
+    "site_admin": false
+  }
+]
