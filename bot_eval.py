@@ -32,8 +32,8 @@ class BotEvalBase:
                  head_repo, pull_request, github_client):
         super().__init__()  # Support multiple inheritance
         self.botname = botname
-        self.changed_filenames = changed_filenames
-        self.user_or_org = user_or_org
+        self.changed_filenames: List[str] = changed_filenames
+        self.user_or_org_dir = user_or_org_dir
         self.base_repo = base_repo
         self.head_repo = head_repo
         self.pr_event = pull_request
