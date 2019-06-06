@@ -149,7 +149,7 @@ class PrProcessor(PrProcessorBase):
     def github_client(self):
         if PrProcessor._github_client is None:
             # Lazy load class variable. Note this doesn't affect the base class
-            PrProcessor._github_client = github.Github(c.github_token)
+            PrProcessor._github_client = github.Github(blconfig.github_token)
         return PrProcessor._github_client
 
 
