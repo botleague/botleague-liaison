@@ -67,17 +67,7 @@ class BotEvalBase:
 
     def eval_bot(self, bot_def_filename) -> Union[Response, List[Response]]:
         bot_def = self.github_get(self.head_repo, bot_def_filename)
-        source_commit = bot_def['source_commit']
-
-        github_prefix = 'https://github.com/'
-
-        if not source_commit.startswith(github_prefix):
-            return ErrorResponse('source_commit does not start with ' +
-                                 github_prefix)
-
-        # Validate that user_or_org matches source_commit and json_commit.
-        source_commit_user = source_commit[
-                             len(github_prefix):].split('/')[0]
+        bot_def.source_commit = bot_def.get('source_commit', '')
 
         if self.user_or_org_dir != self.league_commit_user:
             if not self.user_in_org(user=self.league_commit_user,
