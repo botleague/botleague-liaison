@@ -5,16 +5,13 @@ from wsgiref.simple_server import make_server
 from box import Box
 
 from botleague_helpers.config import blconfig
-from botleague_helpers.key_value_store import SimpleKeyValueStore
 
 from pr_processor import get_pr_processor
 from pyramid.config import Configurator
 from pyramid.view import view_config, view_defaults
 from pyramid.response import Response
 import github
-from github import Github, NamedUser
-import constants as c
-import key_value_store  # Do this after firebase is initialized
+from github import Github
 
 
 @view_defaults(
