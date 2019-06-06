@@ -172,8 +172,22 @@ def get_eval_db_key(eval_data):
 
 
 class BotEvalMock(BotEvalBase, Mockable):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+    def github_get(self, _repo, filename):
+        filepath = self.get_test_filename(filename)
+        content_str = read_file(filepath)
+        ret = get_str_or_box(content_str, filepath)
+        return ret
+
+    @staticmethod
+    def request_eval(endpoint: str, eval_data: Box) -> Response:
+        if eval_data.eval_key == eval_data.eval_id:
+            raise RuntimeWarning('eval_key and eval_id should be different! '
+                                 'The key is private, but the id can be '
+                                 'public.')
+        return EvalStartedResponse('Mock eval - nothing happening.', eval_data)
 
     def user_in_org(self, user, org):
         members = BoxList.from_json(filename=self.get_test_filename(
