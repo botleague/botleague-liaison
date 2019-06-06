@@ -144,7 +144,7 @@ class PrProcessorBase:
         return resp
 
     @staticmethod
-    def create_status(status, msg, commit_sha, github_client, repo_name):
+    def create_status(resp, commit_sha, github_client, repo_name):
         raise NotImplementedError()
 
     @staticmethod
@@ -213,7 +213,7 @@ class PrProcessorMock(PrProcessorBase, Mockable):
         return None
 
     @staticmethod
-    def create_status(status, msg, commit_sha, github_client, repo_name):
+    def create_status(resp, commit_sha, github_client, repo_name):
         return None
 
     @property
