@@ -14,7 +14,7 @@ log.basicConfig(level=log.INFO)
 from github import UnknownObjectException
 
 
-def get_from_github(repo, filename):
+def get_file_from_github(repo, filename):
     """@:param filename: relative path to file in repo"""
     try:
         contents = repo.get_contents(filename)
