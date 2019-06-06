@@ -44,9 +44,9 @@ class BotEvalBase:
         bot_def_filenames = []
         bot_readme_filenames = []
         for filename in self.changed_filenames:
-            if filename.endswith(c.BOT_DEFINITION_FILENAME):
+            if filename.endswith(constants.BOT_DEFINITION_FILENAME):
                 bot_def_filenames.append(filename)
-            elif filename.endswith(c.README_FILENAME):
+            elif filename.endswith(constants.README_FILENAME):
                 bot_readme_filenames.append(filename)
 
         # Do evaluations
@@ -93,8 +93,9 @@ class BotEvalBase:
     def eval_bots_problems(self, problem_ids, bot_def) -> List[Response]:
         responses:List[Response] = []
         for problem_id in problem_ids:
-            problem_def_url = '%s/%s/%s' % (c.PROBLEMS_DIR, problem_id,
-                                            c.PROBLEM_DEFINITION_FILENAME)
+            problem_def_url = '%s/%s/%s' % (
+                constants.PROBLEMS_DIR, problem_id,
+                constants.PROBLEM_DEFINITION_FILENAME)
             # Ensure the problem exists
             problem_def = self.github_get(self.base_repo, problem_def_url)
             if not problem_def:
