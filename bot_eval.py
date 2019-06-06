@@ -164,7 +164,6 @@ class BotEvalBase:
         #   - "source_commit": "https://github.com/crizCraig/forward-agent/commit/defc93d95944099d3e61cda6542bb4ffe7a28abf"
         #   -
 
-        pass
 
 def get_eval_db_key(eval_data):
     return '%s_%s' % (constants.ONGOING_EVALUATIONS_KEY_PREFIX,
@@ -236,6 +235,11 @@ def process_changed_bot(
     return resp, should_gen
 
 
+def handle_results(eval_data: Box, results: Box, status: str):
+    """
+    Handles results POSTS from problem evaluators at the
+    """
+    # Get the eval_data using the result.eval_key
 
     results.username = eval_data.username
     results.botname = eval_data.botname
