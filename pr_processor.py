@@ -29,8 +29,9 @@ class PrProcessorBase:
     changed_files: List[Box]
     _github_client: github.Github = None
 
-    def __init__(self):
-        super().__init__()  # Support multiple inheritance
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)  # Support multiple inheritance
+        self.is_mock = isinstance(self, Mockable)
 
     def process_changes(self) -> Tuple[Union[Response, List[Response]], str]:
         pull_request = self.pr_event.pull_request
