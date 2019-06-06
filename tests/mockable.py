@@ -8,7 +8,7 @@ from utils import read_file, get_str_or_box, read_json
 
 
 class Mockable:
-    test_name: str = None
+    test_name: str = ''
 
     def __init__(self):
         self.test_name = get_test_name_from_callstack()
