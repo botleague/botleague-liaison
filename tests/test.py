@@ -29,13 +29,27 @@ def test_move_plus_modify():
 
 
 def test_bot_eval():
+    bot_eval_helper()
+
+
+def test_bot_eval_org():
+    bot_eval_helper()
+
+
+def test_bot_eval_missing_source_commit():
+    bot_eval_helper()
+
+
+def bot_eval_helper():
+    """
+     Uses test method name to set data dir
+    """
     pr_processor = PrProcessorMock()
     responses, status = pr_processor.process_changes()
     assert len(responses) == 1
     resp = responses[0]
     eval_data = resp.eval_data
     assert isinstance(resp, EvalStartedResponse)
-    test_name = get_test_name_from_callstack()
     username = eval_data.username
     botname = eval_data.botname
     results = Mockable.read_test_box(join(constants.BOTS_DIR, username, botname,
