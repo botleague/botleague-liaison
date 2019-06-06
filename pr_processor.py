@@ -100,8 +100,15 @@ class PrProcessorBase:
             resp = err
         elif base_dirs == [constants.BOTS_DIR]:
             resp, should_gen = process_changed_bot(
-                self.base_repo, botname_dirs, changed_filenames, self.head_repo,
-                pull_request, user_dirs, changed_filetypes)
+                base_repo=self.base_repo,
+                botname_dirs=botname_dirs,
+                changed_filenames=changed_filenames,
+                head_repo=self.head_repo,
+                pull_request=pull_request,
+                user_dirs=user_dirs,
+                changed_filetypes=changed_filetypes,
+                from_mock=self.is_mock,
+                github_client=self.github_client)
         elif base_dirs == [constants.PROBLEMS_DIR]:
             # Trigger problem CI
             # TODO: Verify that a problem submission does not change the name of
