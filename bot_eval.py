@@ -141,7 +141,7 @@ class BotEvalBase:
                     'Endpoint %s did not respond with success' % endpoint))
             else:
                 kv = SimpleKeyValueStore()
-                db_key = '%s_%s' % (c.ONGOING_EVALUATIONS_KEY_PREFIX, eval_key)
+                db_key = get_eval_db_key(eval_data)
                 kv.set(db_key, eval_data)
                 # TODO: Now we wait for a /confirm and /results request with the
                 #   eval_key
@@ -166,14 +166,9 @@ class BotEvalBase:
 
         pass
 
-    def github_get(self, repo, filename):
-        raise NotImplementedError()
-
-
-class BotEval(BotEvalBase):
-    def github_get(self, repo, filename):
-        from util import get_from_github
-        return get_from_github(repo, filename)
+def get_eval_db_key(eval_data):
+    return '%s_%s' % (constants.ONGOING_EVALUATIONS_KEY_PREFIX,
+                      eval_data.eval_key)
 
 
 class BotEvalMock(BotEvalBase, Mockable):
