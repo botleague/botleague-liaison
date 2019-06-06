@@ -122,13 +122,12 @@ class PrProcessor(PrProcessorBase):
         super().__init__()
         self.pr = pr
 
-    def get_changed_files(self):
-        ret = list(self.base_repo.get_pull(self.pull_number).get_files())
-        ret = [Box(r.raw_data) for r in ret]
-        if constants.SHOULD_RECORD:
-            util.write_json(ret, join(constants.ROOT_DIR,
-                                      'recorded-changed-files.json'))
-        return ret
+    def get_changed_files(self) -> List[Box]:
+        if self.changed_files is not None:
+            ret = list(self.base_repo.get_pull(self.pull_number).get_files())
+            ret = [Box(r.raw_data) for r in ret]
+            self.changed_files = ret
+        return self.changed_files
 
     def get_repo(self, repo_name):
         return self.github_client.get_repo(repo_name)
