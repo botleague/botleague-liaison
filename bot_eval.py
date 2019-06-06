@@ -64,7 +64,7 @@ class BotEvalBase:
         # TODO: Add username to results.json
         # TODO: Handle cases where only readme changes
 
-    def eval_bot(self, bot_def_filename):
+    def eval_bot(self, bot_def_filename) -> Union[Response, List[Response]]:
         bot_def = self.github_get(self.head_repo, bot_def_filename)
         source_commit = bot_def['source_commit']
 
