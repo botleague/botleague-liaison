@@ -170,39 +170,33 @@ class BotEval(BotEvalBase):
     @staticmethod
     def request_eval(endpoint: str, eval_data: Box) -> Response:
         try:
-            resp = requests.post(endpoint, json=eval_data, timeout=10)
+            endpoint_resp = requests.post(endpoint, json=eval_data.to_json(),
+                                          timeout=10)
         except requests.exceptions.Timeout:
-            responses.append(ErrorResponse(
-                'Endpoint %s took too long to respond' % endpoint))
+            ret = EvalErrorResponse(
+                'Endpoint %s took too long to respond' % endpoint)
         else:
             # Yay, we did not timeout!
-            if resp.status_code != 200:
-                responses.append(ErrorResponse(
-                    'Endpoint %s did not respond with success' % endpoint))
+            if endpoint_resp.status_code != 200:
+                ret = EvalErrorResponse(
+                    'Endpoint %s failed with HTTP %r, response body was %s'
+                    % (endpoint, endpoint_resp.status_code,
+                       endpoint_resp.content))
             else:
                 kv = SimpleKeyValueStore()
                 db_key = get_eval_db_key(eval_data)
                 kv.set(db_key, eval_data)
                 # TODO: Now we wait for a /confirm and /results request with the
                 #   eval_key
-                responses.append(StartedResponse('Started evaluation at %s' %
-                                                 endpoint))
+                ret = EvalStartedResponse('Started evaluation at %s' % endpoint,
+                                          eval_data)
+        return ret
 
-    def handle_results(results):
-        """
-        Handles results POSTS from problem evaluators at the
-        """
-        # TODO: Test locally generated results.json by transforming it to required
-        #   format - pull eval info from KV store using eval_key
-        #   Add:
-        #   - username
-        #   - botname
-        #   - problem
-        #   - "status": "success",
-        #   - "utc_timestamp": 86600000,
-        #   - "json_commit": "https://github.com/deepdrive/agent-zoo/commit/3a0e6af15c5ee05b62c6705d40aece250112a57d"
-        #   - "source_commit": "https://github.com/crizCraig/forward-agent/commit/defc93d95944099d3e61cda6542bb4ffe7a28abf"
-        #   -
+    def user_in_org(self, user, org):
+        public_members = list(self.github_client.get_organization('deepdrive')
+                              .get_public_members())
+        ret = user in public_members
+        return ret
 
 
 def get_eval_db_key(eval_data):
