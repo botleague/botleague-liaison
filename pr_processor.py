@@ -167,11 +167,11 @@ class PrProcessorBase:
 
 
 class PrProcessor(PrProcessorBase):
-    def __init__(self, pr):
+    def __init__(self, pr_event):
         if get_test_name_from_callstack():
             raise RuntimeError('Should not be using this class in tests!')
         super().__init__()
-        self.pr = pr
+        self.pr_event = pr_event
 
     def get_changed_files(self) -> List[Box]:
         if self.changed_files is not None:
