@@ -21,7 +21,7 @@ from utils import generate_rand_alphanumeric
 class BotEvalBase:
     botname: str
     changed_filenames: List[str]
-    user_or_org: str
+    user_or_org_dir: str
     base_repo: Repository
     head_repo: Repository
     pr_event: Box
@@ -255,7 +255,7 @@ def process_changed_bot(
     elif len(botname_dirs) > 1:
         resp = ErrorResponse('Can only submit one bot at a time')
     else:
-        user_or_org = user_dirs[0]
+        user_or_org_dir = user_dirs[0]
         botname = botname_dirs[0]
         if ['md'] == list(changed_filetypes):
             # Just a docs/readme change. Trigger leaderboard gen.
@@ -267,7 +267,7 @@ def process_changed_bot(
             evaluator = get_bot_eval(use_mock=from_mock)(
                 botname=botname,
                 changed_filenames=changed_filenames,
-                user_or_org=user_or_org,
+                user_or_org_dir=user_or_org_dir,
                 base_repo=base_repo, head_repo=head_repo,
                 pull_request=pull_request,
                 github_client=github_client)
