@@ -98,11 +98,24 @@ class BotEvalBase:
                                       problem_id))
             else:
                 # Trigger the eval at the problem endpoint
-                self.trigger_eval(bot_def, problem_def, problem_id, responses)
+                resp = self.trigger_single_eval(bot_def, problem_def,
+                                                problem_id)
+                responses.append(resp)
+        return responses
 
-    def trigger_eval(self, bot_def, problem_def, problem_id, responses):
-        endpoint = problem_def['endpoint']
-        eval_key = uuid.uuid4().hex
+    def trigger_single_eval(self, bot_def, problem_def, problem_id) -> Response:
+        endpoint = problem_def.endpoint
+        eval_key = generate_rand_alphanumeric(25)
+        eval_id = generate_rand_alphanumeric(25)
+        eval_data = self.get_eval_data(eval_id, eval_key, problem_id, bot_def)
+        resp = self.request_eval(endpoint, eval_data)
+        return resp
+
+    @staticmethod
+    def request_eval(endpoint, eval_data) -> Response:
+        raise NotImplementedError()
+
+    def get_eval_data(self, eval_id, eval_key, problem_id, bot_def) -> Box:
         pull_number = self.pr_event.number
         pull_url = self.pr_event.url
         pull_request_updated_at = self.pr_event.updated_at
@@ -112,23 +125,50 @@ class BotEvalBase:
         head_full_name = self.pr_event.head.repo.full_name
         base_full_name = self.pr_event.base.repo.full_name
         now = time.time()
-        eval_data = dict(eval_key=eval_key,
-                         seed=self.seed,
-                         problem_id=problem_id,
-                         botname=self.botname,
-                         username=self.user_or_org,
-                         status=c.EVAL_STATUS_STARTED,
-                         created_at=now,
-                         pull_request=dict(
-                             url=pull_url,
-                             number=pull_number,
-                             updated_at=pull_request_updated_at,
-                             merge_commit_sha=merge_commit_sha,
-                             head_commit=head_commit,
-                             head_full_name=head_full_name,
-                             base_commit=base_commit,
-                             base_full_name=base_full_name,
-                         ),)
+        eval_data = Box(eval_key=eval_key,
+                        eval_id=eval_id,
+                        seed=self.seed,
+                        problem_id=problem_id,
+                        botname=self.botname,
+                        username=self.user_or_org_dir,
+                        status=constants.EVAL_STATUS_STARTED,
+                        started=now,
+                        source_commit=bot_def.source_commit,
+                        league_commit_sha=head_commit,
+                        pull_request=dict(
+                            url=pull_url,
+                            number=pull_number,
+                            updated_at=pull_request_updated_at,
+                            merge_commit_sha=merge_commit_sha,
+                            head_commit=head_commit,
+                            head_full_name=head_full_name,
+                            base_commit=base_commit,
+                            base_full_name=base_full_name,
+                        ), )
+        return eval_data
+
+    @staticmethod
+    def user_in_members(user, members):
+        ret = any(m['login'].lower() == user.lower() for m in members)
+        return ret
+
+    def github_get(self, repo, filename):
+        raise NotImplementedError()
+
+    def user_in_org(self, user, org):
+        raise NotImplementedError()
+
+
+class BotEval(BotEvalBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def github_get(self, repo, filename):
+        from utils import get_file_from_github
+        return get_file_from_github(repo, filename)
+
+    @staticmethod
+    def request_eval(endpoint: str, eval_data: Box) -> Response:
         try:
             resp = requests.post(endpoint, json=eval_data, timeout=10)
         except requests.exceptions.Timeout:
