@@ -137,7 +137,9 @@ class PrProcessor(PrProcessorBase):
     def create_status(status, msg, commit_sha, github_client, repo_name):
         repo = github_client.get_repo(repo_name)
         commit = repo.get_commit(sha=commit_sha)
-        # error, failure, pending, or success
+
+        # status can be error, failure, pending, or success
+
         status = commit.create_status(
             status,
             description=msg,
