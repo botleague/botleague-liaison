@@ -40,8 +40,7 @@ class BotEvalBase:
         self.seed = random.choice(range(1, 10 ** 6))
         self.github_client = github_client
 
-    def eval(self):
-        # Validate bot.json
+    def eval(self) -> Union[Response, List[Response]]:
         bot_def_filenames = []
         bot_readme_filenames = []
         for filename in self.changed_filenames:
@@ -91,8 +90,8 @@ class BotEvalBase:
         prob_responses = self.eval_bots_problems(problem_ids, bot_def)
         return prob_responses
 
-    def eval_bots_problems(self, problem_ids, bot_def):
-        responses = []
+    def eval_bots_problems(self, problem_ids, bot_def) -> List[Response]:
+        responses:List[Response] = []
         for problem_id in problem_ids:
             problem_def_url = '%s/%s/%s' % (c.PROBLEMS_DIR, problem_id,
                                             c.PROBLEM_DEFINITION_FILENAME)
@@ -194,9 +193,11 @@ def get_bot_eval():
         return BotEval
 
 
-def process_changed_bot(base_repo, botname_dirs, changed_filenames,
-                        head_repo, pull_request, user_dirs,
-                        changed_filetypes):
+def process_changed_bot(
+        base_repo, botname_dirs, changed_filenames, head_repo, pull_request,
+        user_dirs, changed_filetypes, from_mock,
+        github_client:github.Github) -> \
+        Tuple[Union[Response, List[Response]], bool]:
     should_gen = False
     user_dirs = list(user_dirs)
     if len(user_dirs) > 1:
