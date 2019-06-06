@@ -223,8 +223,12 @@ class BotEvalMock(BotEvalBase, Mockable):
     def user_in_org(self, user, org):
         members = BoxList.from_json(filename=self.get_test_filename(
             'github_org_{org}_public_members.json').format(org=org))
+        # TODO: We should also be checking that the user has commit or some higher
+        #   level access than just member. i.e. EpicGames members should
+        #   not be creating EpicGames problems.
         ret = self.user_in_members(user, members)
         return ret
+
 
 def get_bot_eval(use_mock):
     if use_mock or blconfig.is_test or get_test_name_from_callstack():
