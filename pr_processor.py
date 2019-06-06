@@ -53,6 +53,49 @@ class PrProcessorBase:
          err) = group_changed_files(self.changed_files)
 
         should_gen = False
+        commit_sha = self.pr_event.pull_request.head.sha
+
+        resp, should_gen = self.dispatch(
+            base_dirs, botname_dirs, changed_filenames, changed_filetypes,
+            err, pull_request, should_gen, user_dirs)
+        if should_gen:
+            SimpleKeyValueStore().set(blconfig.should_gen_key, True)
+
+        status = self.create_status(resp, commit_sha, self.github_client,
+                                    base_repo_name)
+        return resp, status
+
+    @staticmethod
+    def get_ci_resp(resp) -> Tuple[str, str]:
+        if isinstance(resp, Response):
+            msg = resp.msg
+            if isinstance(resp, ErrorResponse):
+                status = constants.CI_STATUS_ERROR
+            elif isinstance(resp, StartedResponse):
+                status = constants.CI_STATUS_PENDING
+            elif isinstance(resp, RegenResponse):
+                status = constants.CI_STATUS_SUCCESS
+            elif isinstance(resp, IgnoreResponse):
+                status = constants.CI_STATUS_SUCCESS
+            else:
+                raise RuntimeError('Unexpected response type')
+        elif isinstance(resp, list):
+            # We've fanned out a number of eval requests 1->N,
+            # Ensure they've all succeeded.
+            msg = '\n'.join([r.msg for r in resp])
+            if any(isinstance(r, EvalErrorResponse) for r in resp):
+                status = constants.CI_STATUS_ERROR
+            elif all(isinstance(r, EvalStartedResponse) for r in resp):
+                status = constants.CI_STATUS_PENDING
+            else:
+                raise RuntimeError('Unexpected type for eval response')
+        else:
+            raise RuntimeError('Unexpected response format')
+        return status, msg
+
+    def dispatch(self, base_dirs, botname_dirs, changed_filenames,
+                 changed_filetypes, err, pull_request, should_gen,
+                 user_dirs) -> Tuple[Union[Response, List[Response]], bool]:
         if err is not None:
             resp = err
         elif base_dirs == [constants.BOTS_DIR]:
@@ -133,8 +176,8 @@ class PrProcessor(PrProcessorBase):
     def get_repo(self, repo_name):
         return self.github_client.get_repo(repo_name)
 
-    @staticmethod
-    def create_status(status, msg, commit_sha, github_client, repo_name):
+    def create_status(self, resp, commit_sha, github_client, repo_name):
+        status, msg = self.get_ci_resp(resp)
         repo = github_client.get_repo(repo_name)
         commit = repo.get_commit(sha=commit_sha)
 
