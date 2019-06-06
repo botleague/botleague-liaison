@@ -43,7 +43,7 @@ class PrProcessorBase:
         self.pull_number = pull_request.number
 
         # Get all the changed files in a pull request
-        changed_files = self.get_changed_files()
+        self.changed_files = self.get_changed_files()
 
         (base_dirs,
          botname_dirs,
