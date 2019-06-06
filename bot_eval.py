@@ -37,6 +37,7 @@ class BotEvalBase:
         self.base_repo = base_repo
         self.head_repo = head_repo
         self.pr_event = pull_request
+        self.league_commit_user = self.pr_event.user.login.lower()
         self.seed = random.choice(range(1, 10 ** 6))
         self.github_client = github_client
 
@@ -78,15 +79,12 @@ class BotEvalBase:
         source_commit_user = source_commit[
                              len(github_prefix):].split('/')[0]
 
-        # TODO: Get the botname from the JSON commit path. It does not have to match
-        #   the source_commit, i.e. deepdrive agents.
-
-        # TODO: Move bot readme to botleague (not in the source repo),
-        #   as some bots may just bot docker containers.
-        if source_commit_user.lower() != self.user_or_org.lower():
-            return ErrorResponse('Bot directory does not match user or org name'
-                                 'on source repo, aborting')
-        problem_ids = bot_def['problems']
+        if self.user_or_org_dir != self.league_commit_user:
+            if not self.user_in_org(user=self.league_commit_user,
+                                    org=self.user_or_org_dir):
+                return ErrorResponse('Bot directory does not match user or '
+                                     'org name on source repo, aborting')
+        problem_ids = bot_def.problems
         prob_responses = self.eval_bots_problems(problem_ids, bot_def)
         return prob_responses
 
