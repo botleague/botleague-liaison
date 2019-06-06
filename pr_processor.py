@@ -212,7 +212,7 @@ class PrProcessorMock(PrProcessorBase, Mockable):
 
 
 def get_pr_processor(pr_event=None) -> PrProcessorBase:
-    if c.is_test:
+    if blconfig.is_test:
         # This is a guard rail, you should just use the mock constructor in
         # tests
         ret = PrProcessorMock()
