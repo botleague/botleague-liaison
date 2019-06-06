@@ -131,24 +131,7 @@ class PrProcessorBase:
         else:
             # Allow the pull request, likely a docs / license, etc... change
             resp = IgnoreResponse('No leaderboard changes detected')
-        commit_sha = self.pr_event.pull_request.head.sha
-
-        if isinstance(resp, ErrorResponse):
-            ret_status = constants.CI_STATUS_ERROR
-        elif isinstance(resp, StartedResponse):
-            ret_status = constants.CI_STATUS_PENDING
-        elif isinstance(resp, RegenResponse):
-            ret_status = constants.CI_STATUS_SUCCESS
-        else:
-            ret_status = constants.CI_STATUS_SUCCESS
-
-        if should_gen:
-            SimpleKeyValueStore().set(c.should_gen_key, True)
-
-        status = self.create_status(
-            ret_status, resp.msg, commit_sha, self.github_client,
-            base_repo_name)
-        return resp
+        return resp, should_gen
 
     @staticmethod
     def create_status(resp, commit_sha, github_client, repo_name):
