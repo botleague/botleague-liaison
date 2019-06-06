@@ -53,12 +53,17 @@ class BotEvalBase:
         # Do evaluations
         if bot_def_filenames:
             if len(bot_def_filenames) > 1:
-                return ErrorResponse('Only one bot per pull request allowed')
+                ret = ErrorResponse('Only one bot per pull request allowed')
             else:
                 ret = self.eval_bot(bot_def_filenames[0])
-
-                if isinstance(ret, ErrorResponse):
-                    return ret
+        elif bot_readme_filenames:
+            # Yes, this is handled already in processed_changed_bots, so
+            # it's redundant.
+            ret = IgnoreResponse('Just a readme change, ignoring')
+        else:
+            ret = ErrorResponse('Unsupported bot files changed %r' %
+                                self.changed_filenames)
+        return ret
 
         # TODO: Copy the docker image over to GCR
         # TODO: Add botname to results.json
