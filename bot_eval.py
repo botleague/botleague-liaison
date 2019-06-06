@@ -214,7 +214,7 @@ def process_changed_bot(base_repo, botname_dirs, changed_filenames,
                                  'regenerating leaderboards')
         else:
             # Trigger bot evaluation
-            evaluator = get_bot_eval()(
+            evaluator = get_bot_eval(use_mock=from_mock)(
                 botname=botname,
                 changed_filenames=changed_filenames,
                 user_or_org=user_or_org,
