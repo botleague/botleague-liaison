@@ -1,19 +1,14 @@
 from __future__ import print_function
 
-import os
 from wsgiref.simple_server import make_server
 
 from box import Box
 
-from bot_eval import BotEval, process_changed_bot, process_pull_request_changes
 from botleague_helpers.config import blconfig
 from botleague_helpers.key_value_store import SimpleKeyValueStore
 
 from pr_processor import get_pr_processor
-from responses import ErrorResponse, StartedResponse, RegenResponse, \
-    IgnoreResponse
 from pyramid.config import Configurator
-from pyramid.httpexceptions import HTTPClientError
 from pyramid.view import view_config, view_defaults
 from pyramid.response import Response
 import github
