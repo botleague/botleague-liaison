@@ -66,8 +66,6 @@ class BotEvalBase:
         return ret
 
         # TODO: Copy the docker image over to GCR
-        # TODO: Add botname to results.json
-        # TODO: Add username to results.json
         # TODO: Handle cases where only readme changes
 
     def eval_bot(self, bot_def_filename) -> Union[Response, List[Response]]:
