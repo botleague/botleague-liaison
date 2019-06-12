@@ -49,7 +49,7 @@ class PrProcessorBase:
          botname_dirs,
          changed_filenames,
          changed_filetypes,
-         user_dirs,
+         user_org_dirs,
          err) = group_changed_files(self.changed_files)
 
         should_gen = False
@@ -57,7 +57,7 @@ class PrProcessorBase:
 
         resp, should_gen = self.dispatch(
             base_dirs, botname_dirs, changed_filenames, changed_filetypes,
-            err, pull_request, should_gen, user_dirs)
+            err, pull_request, should_gen, user_org_dirs)
         if should_gen:
             SimpleKeyValueStore().set(blconfig.should_gen_key, True)
 
@@ -224,7 +224,7 @@ def get_pr_processor(pr_event=None) -> PrProcessorBase:
 
 def group_changed_files(changed_files):
     base_dirs = set()
-    user_dirs = set()
+    user_org_dirs = set()
     botname_dirs = set()
     problem_dirs = set()
     changed_filenames = []
@@ -239,7 +239,7 @@ def group_changed_files(changed_files):
         if base_dir == constants.BOTS_DIR:
             if len(path_parts) != 4:
                 # Expect something like
-                #   ['bots', username, botname, 'bot.json']
+                #   ['bots', user_or_org, botname, 'bot.json']
                 err = ErrorResponse('Malformed bot submission')
                 break
             elif path_parts[-1] not in constants.ALLOWED_BOT_FILENAMES:
@@ -254,12 +254,12 @@ def group_changed_files(changed_files):
                 err = ErrorResponse('Renaming bots currently not supported')
                 break
             else:
-                user_dirs.add(path_parts[1])
+                user_org_dirs.add(path_parts[1])
                 botname_dirs.add(path_parts[2])
         elif base_dir == constants.PROBLEMS_DIR:
-            if len(path_parts) != 3:
+            if len(path_parts) != 4:
                 # Expect something like
-                #   ['problems', problem_id, 'problem.json']
+                #   ['problems', user_or_org, problem_name, 'problem.json']
                 err = ErrorResponse('Malformed problem submission')
                 break
             elif path_parts[-1] not in constants.ALLOWED_PROBLEM_FILENAMES:
@@ -270,13 +270,14 @@ def group_changed_files(changed_files):
                 err = ErrorResponse(constants.RENAME_PROBLEM_ERROR_MSG)
                 break
             else:
-                problem_dirs.add(path_parts[1])
+                user_org_dirs.add(path_parts[1])
+                problem_dirs.add(path_parts[2])
         base_dirs.add(base_dir)
         filetype = filename.split('.')[-1]
         changed_filetypes.add(filetype)
     base_dirs = list(base_dirs)
     pre_ret = (base_dirs, botname_dirs, changed_filenames,
-               changed_filetypes, user_dirs, err)
+               changed_filetypes, user_org_dirs, err)
 
     ret = []
     for item in pre_ret:

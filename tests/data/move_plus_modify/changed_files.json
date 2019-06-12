@@ -1,27 +1,27 @@
 [
   {
     "sha": "c8a145fa7196e38b16b1529a078204f68776074b",
-    "filename": "problems/domain_randomization_test_rename/README.md",
+    "filename": "problems/deepdrive/domain_randomization_test_rename/README.md",
     "status": "renamed",
     "additions": 2,
     "deletions": 0,
     "changes": 2,
-    "blob_url": "https://github.com/botleague/botleague/blob/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/domain_randomization_test_rename/README.md",
-    "raw_url": "https://github.com/botleague/botleague/raw/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/domain_randomization_test_rename/README.md",
-    "contents_url": "https://api.github.com/repos/botleague/botleague/contents/problems/domain_randomization_test_rename/README.md?ref=c92b365f08d5f93a1346374fa95647bf2e6d6522",
+    "blob_url": "https://github.com/botleague/botleague/blob/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/deepdrive/domain_randomization_test_rename/README.md",
+    "raw_url": "https://github.com/botleague/botleague/raw/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/deepdrive/domain_randomization_test_rename/README.md",
+    "contents_url": "https://api.github.com/repos/botleague/botleague/contents/problems/deepdrive/domain_randomization_test_rename/README.md?ref=c92b365f08d5f93a1346374fa95647bf2e6d6522",
     "patch": "@@ -5,3 +5,5 @@ Short few second test (thus sanity) of end-to-end driving performance with one c\n Included in these view modes were depth, world normals, reflectivity, and roughness which can be seen as an approximation to a Lidar sensor. All of these modes are part of Unreal's graphics pipelines making them efficient to render.\n \n The hope is that this provides better generalization to real-world visual domains a la https://blog.openai.com/learning-dext...\n+\n+Checking move/rename + change in one commit\n\\ No newline at end of file",
-    "previous_filename": "problems/domain_randomization/README.md"
+    "previous_filename": "problems/deepdrive/domain_randomization/README.md"
   },
   {
     "sha": "4d174e1dcfe66eb97cd0a5edf0b7fb420ce12225",
-    "filename": "problems/domain_randomization_test_rename/problem.json",
+    "filename": "problems/deepdrive/domain_randomization_test_rename/problem.json",
     "status": "renamed",
     "additions": 0,
     "deletions": 0,
     "changes": 0,
-    "blob_url": "https://github.com/botleague/botleague/blob/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/domain_randomization_test_rename/problem.json",
-    "raw_url": "https://github.com/botleague/botleague/raw/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/domain_randomization_test_rename/problem.json",
-    "contents_url": "https://api.github.com/repos/botleague/botleague/contents/problems/domain_randomization_test_rename/problem.json?ref=c92b365f08d5f93a1346374fa95647bf2e6d6522",
-    "previous_filename": "problems/domain_randomization/problem.json"
+    "blob_url": "https://github.com/botleague/botleague/blob/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/deepdrive/domain_randomization_test_rename/problem.json",
+    "raw_url": "https://github.com/botleague/botleague/raw/c92b365f08d5f93a1346374fa95647bf2e6d6522/problems/deepdrive/domain_randomization_test_rename/problem.json",
+    "contents_url": "https://api.github.com/repos/botleague/botleague/contents/problems/deepdrive/domain_randomization_test_rename/problem.json?ref=c92b365f08d5f93a1346374fa95647bf2e6d6522",
+    "previous_filename": "problems/deepdrive/domain_randomization/problem.json"
   }
 ]
