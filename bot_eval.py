@@ -82,7 +82,7 @@ class BotEvalBase:
         return prob_responses
 
     def eval_bots_problems(self, problem_ids, bot_def) -> List[Response]:
-        responses:List[Response] = []
+        responses: List[Response] = []
         for problem_id in problem_ids:
             problem_def_url = '%s/%s/%s' % (
                 constants.PROBLEMS_DIR, problem_id,
