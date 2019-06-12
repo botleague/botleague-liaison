@@ -110,7 +110,8 @@ class PrProcessorBase:
                 from_mock=self.is_mock,
                 github_client=self.github_client)
         elif base_dirs == [constants.PROBLEMS_DIR]:
-            # Trigger problem CI
+            # If this is an existing problem, trigger a problem rerun
+            # If it's a new problem, just return should_gen
             # TODO: Verify that a problem submission does not change the name of
             #  an existing problem - use "renamed" to key off of as we did with
             #  bots
