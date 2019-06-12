@@ -277,12 +277,13 @@ def handle_results(eval_data: Box, results: Box, status: str):
     """
     # Get the eval_data using the result.eval_key
 
+    now = time.time()
     results.username = eval_data.username
     results.botname = eval_data.botname
     results.problem_id = eval_data.problem_id
     results.status = status
     results.started = eval_data.started
-    results.received = time.time()
+    results.finished = now
     results.league_commit_sha = eval_data.league_commit_sha
     results.source_commit = eval_data.source_commit
     results.seed = eval_data.seed
