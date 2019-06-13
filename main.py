@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from wsgiref.simple_server import make_server
 
+from botleague_helpers.key_value_store import get_key_value_store
 from box import Box
 
 from botleague_helpers.config import blconfig
@@ -13,9 +14,12 @@ from pyramid.response import Response
 import github
 from github import Github
 
+from pr_responses import ErrorPrResponse
+from results_view import handle_results_request
+
 
 @view_defaults(
-    route_name="github_payload", renderer="json", request_method="POST"
+    route_name='github_payload', renderer='json', request_method='POST'
 )
 class PayloadView(object):
     """
@@ -28,7 +32,7 @@ class PayloadView(object):
         # Payload from Github, it's a dict
         self.payload = self.request.json
 
-    @view_config(header="X-Github-Event:push")
+    @view_config(header='X-Github-Event:push')
     def payload_push(self):
         """This method is a continuation of PayloadView process, triggered if
         header HTTP-X-Github-Event type is Push"""
@@ -38,9 +42,9 @@ class PayloadView(object):
         # TODO: Set should gen when a problem readme changes
 
         # do busy work...
-        return "nothing to push payload"  # or simple {}
+        return 'nothing to push payload'  # or simple {}
 
-    @view_config(header="X-Github-Event:pull_request")
+    @view_config(header='X-Github-Event:pull_request')
     def payload_pull_request(self):
         """This method is a continuation of PayloadView process, triggered if
         header HTTP-X-Github-Event type is Pull Request"""
@@ -52,9 +56,9 @@ class PayloadView(object):
             pr_processor.process_changes()
 
         # do busy work...
-        return "nothing to pull request payload"  # or simple {}
+        return 'nothing to pull request payload'  # or simple {}
 
-    @view_config(header="X-Github-Event:ping")
+    @view_config(header='X-Github-Event:ping')
     def payload_push_ping(self):
         """This method is responding to a webhook ping"""
         return {'ping': True}
@@ -67,6 +71,10 @@ def diagnostics(request):
                         'with %s' % (len(tok), tok[:4]))
     else:
         return Response('Not token found')
+
+
+def results(request):
+    return handle_results_request(request)
 
 
 def root(request):
@@ -103,6 +111,9 @@ with Configurator() as config:
 
     config.add_route(name='diagnostics', pattern='/diagnostics')
     config.add_view(view=diagnostics, route_name='diagnostics')
+
+    config.add_route(name='results', pattern='/results')
+    config.add_view(view=results, route_name='results', renderer='json')
 
     # TODO: Implement confirm request
     """

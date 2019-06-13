@@ -11,8 +11,8 @@ from box import Box
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
 from botleague_helpers.key_value_store import SimpleKeyValueStore
-from responses import ErrorResponse, StartedResponse, RegenResponse, \
-    IgnoreResponse, Response, EvalStartedResponse, EvalErrorResponse
+from pr_responses import ErrorPrResponse, StartedPrResponse, RegenPrResponse, \
+    IgnorePrResponse, PrResponse, EvalStartedPrResponse, EvalErrorPrResponse
 import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
@@ -33,7 +33,7 @@ class PrProcessorBase:
         super().__init__(*args, **kwargs)  # Support multiple inheritance
         self.is_mock = isinstance(self, Mockable)
 
-    def process_changes(self) -> Tuple[Union[Response, List[Response]], str]:
+    def process_changes(self) -> Tuple[Union[PrResponse, List[PrResponse]], str]:
         pull_request = self.pr_event.pull_request
         head = pull_request.head
         head_repo_name = head.repo.full_name
@@ -67,15 +67,15 @@ class PrProcessorBase:
 
     @staticmethod
     def get_ci_resp(resp) -> Tuple[str, str]:
-        if isinstance(resp, Response):
+        if isinstance(resp, PrResponse):
             msg = resp.msg
-            if isinstance(resp, ErrorResponse):
+            if isinstance(resp, ErrorPrResponse):
                 status = constants.CI_STATUS_ERROR
-            elif isinstance(resp, StartedResponse):
+            elif isinstance(resp, StartedPrResponse):
                 status = constants.CI_STATUS_PENDING
-            elif isinstance(resp, RegenResponse):
+            elif isinstance(resp, RegenPrResponse):
                 status = constants.CI_STATUS_SUCCESS
-            elif isinstance(resp, IgnoreResponse):
+            elif isinstance(resp, IgnorePrResponse):
                 status = constants.CI_STATUS_SUCCESS
             else:
                 raise RuntimeError('Unexpected response type')
@@ -83,9 +83,9 @@ class PrProcessorBase:
             # We've fanned out a number of eval requests 1->N,
             # Ensure they've all succeeded.
             msg = '\n'.join([r.msg for r in resp])
-            if any(isinstance(r, EvalErrorResponse) for r in resp):
+            if any(isinstance(r, EvalErrorPrResponse) for r in resp):
                 status = constants.CI_STATUS_ERROR
-            elif all(isinstance(r, EvalStartedResponse) for r in resp):
+            elif all(isinstance(r, EvalStartedPrResponse) for r in resp):
                 status = constants.CI_STATUS_PENDING
             else:
                 raise RuntimeError('Unexpected type for eval response')
@@ -95,7 +95,7 @@ class PrProcessorBase:
 
     def dispatch(self, base_dirs, botname_dirs, changed_filenames,
                  changed_filetypes, err, pull_request, should_gen,
-                 user_dirs) -> Tuple[Union[Response, List[Response]], bool]:
+                 user_dirs) -> Tuple[Union[PrResponse, List[PrResponse]], bool]:
         if err is not None:
             resp = err
         elif base_dirs == [constants.BOTS_DIR]:
@@ -120,18 +120,18 @@ class PrProcessorBase:
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
             # not both can be changed in a single pull request
-            resp = ErrorResponse(
+            resp = ErrorPrResponse(
                 'Either a bot or problem, not both, can be changed '
                 'in a single pull request')
         elif 'json' in changed_filetypes:
             # Fail pull request. Unexpected files, json files should
             # only be changed in the context of a bot or problem.
-            resp = ErrorResponse('Unexpected files, json files should '
+            resp = ErrorPrResponse('Unexpected files, json files should '
                                  'only be changed in the context of a bot or '
                                  'problem.')
         else:
             # Allow the pull request, likely a docs / license, etc... change
-            resp = IgnoreResponse('No leaderboard changes detected')
+            resp = IgnorePrResponse('No leaderboard changes detected')
         return resp, should_gen
 
     @staticmethod
@@ -240,18 +240,18 @@ def group_changed_files(changed_files):
             if len(path_parts) != 4:
                 # Expect something like
                 #   ['bots', user_or_org, botname, 'bot.json']
-                err = ErrorResponse('Malformed bot submission')
+                err = ErrorPrResponse('Malformed bot submission')
                 break
             elif path_parts[-1] not in constants.ALLOWED_BOT_FILENAMES:
-                err = ErrorResponse('%s not an allowed bot file name' %
-                                    path_parts[-1])
+                err = ErrorPrResponse('%s not an allowed bot file name' %
+                                      path_parts[-1])
                 break
             elif changed_file.status == 'renamed':
                 # Verify that botnames and usernames have not been changed
                 # We do this to avoid complicated migrations in the
                 # leaderboard data. If someone changes their GitHub name,
                 # they will get a new user for now.
-                err = ErrorResponse('Renaming bots currently not supported')
+                err = ErrorPrResponse('Renaming bots currently not supported')
                 break
             else:
                 user_org_dirs.add(path_parts[1])
@@ -260,14 +260,14 @@ def group_changed_files(changed_files):
             if len(path_parts) != 4:
                 # Expect something like
                 #   ['problems', user_or_org, problem_name, 'problem.json']
-                err = ErrorResponse('Malformed problem submission')
+                err = ErrorPrResponse('Malformed problem submission')
                 break
             elif path_parts[-1] not in constants.ALLOWED_PROBLEM_FILENAMES:
-                err = ErrorResponse('%s not an allowed bot file name' %
-                                    path_parts[-1])
+                err = ErrorPrResponse('%s not an allowed bot file name' %
+                                      path_parts[-1])
                 break
             elif changed_file.status == 'renamed':
-                err = ErrorResponse(constants.RENAME_PROBLEM_ERROR_MSG)
+                err = ErrorPrResponse(constants.RENAME_PROBLEM_ERROR_MSG)
                 break
             else:
                 user_org_dirs.add(path_parts[1])

@@ -1,30 +1,30 @@
 from box import Box
 
 
-class Response:
+class PrResponse:
     msg: str
 
     def __init__(self, msg):
         self.msg = msg
 
 
-class ErrorResponse(Response):
+class ErrorPrResponse(PrResponse):
     pass
 
 
-class StartedResponse(Response):
+class StartedPrResponse(PrResponse):
     pass
 
 
-class RegenResponse(Response):
+class RegenPrResponse(PrResponse):
     pass
 
 
-class IgnoreResponse(Response):
+class IgnorePrResponse(PrResponse):
     pass
 
 
-class EvalStartedResponse(StartedResponse):
+class EvalStartedPrResponse(StartedPrResponse):
     eval_data: Box = None
 
     def __init__(self, msg, eval_data):
@@ -32,5 +32,5 @@ class EvalStartedResponse(StartedResponse):
         self.eval_data = eval_data
 
 
-class EvalErrorResponse(ErrorResponse):
+class EvalErrorPrResponse(ErrorPrResponse):
     pass

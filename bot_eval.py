@@ -8,10 +8,10 @@ import constants
 import github
 import requests
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
-from botleague_helpers.key_value_store import SimpleKeyValueStore
+from botleague_helpers.key_value_store import get_key_value_store
 from github import Repository
-from responses import ErrorResponse, StartedResponse, RegenResponse, \
-    IgnoreResponse, Response, EvalErrorResponse, EvalStartedResponse
+from pr_responses import ErrorPrResponse, RegenPrResponse, \
+    IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
 from tests.mockable import Mockable
 from utils import read_file, get_str_or_box
 
@@ -41,7 +41,7 @@ class BotEvalBase:
         self.seed = random.choice(range(1, 10 ** 6))
         self.github_client = github_client
 
-    def eval(self) -> Union[Response, List[Response]]:
+    def eval(self) -> Union[PrResponse, List[PrResponse]]:
         bot_def_filenames = []
         bot_readme_filenames = []
         for filename in self.changed_filenames:
@@ -53,36 +53,36 @@ class BotEvalBase:
         # Do evaluations
         if bot_def_filenames:
             if len(bot_def_filenames) > 1:
-                ret = ErrorResponse('Only one bot per pull request allowed')
+                ret = ErrorPrResponse('Only one bot per pull request allowed')
             else:
                 ret = self.eval_bot(bot_def_filenames[0])
         elif bot_readme_filenames:
             # Yes, this is handled already in processed_changed_bots, so
             # it's redundant.
-            ret = IgnoreResponse('Just a readme change, ignoring')
+            ret = IgnorePrResponse('Just a readme change, ignoring')
         else:
-            ret = ErrorResponse('Unsupported bot files changed %r' %
-                                self.changed_filenames)
+            ret = ErrorPrResponse('Unsupported bot files changed %r' %
+                                  self.changed_filenames)
         return ret
 
         # TODO: Copy the docker image over to GCR
         # TODO: Handle cases where only readme changes
 
-    def eval_bot(self, bot_def_filename) -> Union[Response, List[Response]]:
+    def eval_bot(self, bot_def_filename) -> Union[PrResponse, List[PrResponse]]:
         bot_def = self.github_get(self.head_repo, bot_def_filename)
         bot_def.source_commit = bot_def.get('source_commit', '')
 
         if self.user_or_org_dir != self.league_commit_user:
             if not self.user_in_org(user=self.league_commit_user,
                                     org=self.user_or_org_dir):
-                return ErrorResponse('Bot directory does not match user or '
+                return ErrorPrResponse('Bot directory does not match user or '
                                      'org name on source repo, aborting')
         problem_ids = bot_def.problems
         prob_responses = self.eval_bots_problems(problem_ids, bot_def)
         return prob_responses
 
-    def eval_bots_problems(self, problem_ids, bot_def) -> List[Response]:
-        responses: List[Response] = []
+    def eval_bots_problems(self, problem_ids, bot_def) -> List[PrResponse]:
+        responses: List[PrResponse] = []
         for problem_id in problem_ids:
             problem_def_url = '%s/%s/%s' % (
                 constants.PROBLEMS_DIR, problem_id,
@@ -92,8 +92,8 @@ class BotEvalBase:
             if not problem_def:
                 # Problem does not exist
                 responses.append(
-                    EvalErrorResponse('Problem does not exist %s' %
-                                      problem_id))
+                    EvalErrorPrResponse('Problem does not exist %s' %
+                                        problem_id))
             else:
                 # Trigger the eval at the problem endpoint
                 resp = self.trigger_single_eval(bot_def, problem_def,
@@ -101,7 +101,7 @@ class BotEvalBase:
                 responses.append(resp)
         return responses
 
-    def trigger_single_eval(self, bot_def, problem_def, problem_id) -> Response:
+    def trigger_single_eval(self, bot_def, problem_def, problem_id) -> PrResponse:
         endpoint = problem_def.endpoint
         eval_key = generate_rand_alphanumeric(25)
         eval_id = generate_rand_alphanumeric(25)
@@ -110,7 +110,7 @@ class BotEvalBase:
         return resp
 
     @staticmethod
-    def request_eval(endpoint, eval_data) -> Response:
+    def request_eval(endpoint, eval_data) -> PrResponse:
         raise NotImplementedError()
 
     def get_eval_data(self, eval_id, eval_key, problem_id, bot_def) -> Box:
@@ -166,28 +166,27 @@ class BotEval(BotEvalBase):
         return get_file_from_github(repo, filename)
 
     @staticmethod
-    def request_eval(endpoint: str, eval_data: Box) -> Response:
+    def request_eval(endpoint: str, eval_data: Box) -> PrResponse:
         try:
             endpoint_resp = requests.post(endpoint, json=eval_data.to_json(),
                                           timeout=10)
         except requests.exceptions.Timeout:
-            ret = EvalErrorResponse(
+            ret = EvalErrorPrResponse(
                 'Endpoint %s took too long to respond' % endpoint)
         else:
             # Yay, we did not timeout!
             if endpoint_resp.status_code != 200:
-                ret = EvalErrorResponse(
+                ret = EvalErrorPrResponse(
                     'Endpoint %s failed with HTTP %r, response body was %s'
                     % (endpoint, endpoint_resp.status_code,
                        endpoint_resp.content))
             else:
-                kv = SimpleKeyValueStore()
-                db_key = get_eval_db_key(eval_data)
+                kv = get_key_value_store()
+                db_key = get_eval_db_key(eval_data.eval_data)
                 kv.set(db_key, eval_data)
-                # TODO: Now we wait for a /confirm and /results request with the
-                #   eval_key
-                ret = EvalStartedResponse('Started evaluation at %s' % endpoint,
-                                          eval_data)
+                ret = EvalStartedPrResponse('Started evaluation at %s' %
+                                            endpoint, eval_data)
+                # Now wait for a /confirm and /results request with the eval_key
         return ret
 
     def user_in_org(self, user, org):
@@ -197,9 +196,9 @@ class BotEval(BotEvalBase):
         return ret
 
 
-def get_eval_db_key(eval_data):
+def get_eval_db_key(eval_key):
     return '%s_%s' % (constants.ONGOING_EVALUATIONS_KEY_PREFIX,
-                      eval_data.eval_key)
+                      eval_key)
 
 
 class BotEvalMock(BotEvalBase, Mockable):
@@ -213,12 +212,12 @@ class BotEvalMock(BotEvalBase, Mockable):
         return ret
 
     @staticmethod
-    def request_eval(endpoint: str, eval_data: Box) -> Response:
+    def request_eval(endpoint: str, eval_data: Box) -> PrResponse:
         if eval_data.eval_key == eval_data.eval_id:
             raise RuntimeWarning('eval_key and eval_id should be different! '
                                  'The key is private, but the id can be '
                                  'public.')
-        return EvalStartedResponse('Mock eval - nothing happening.', eval_data)
+        return EvalStartedPrResponse('Mock eval - nothing happening.', eval_data)
 
     def user_in_org(self, user, org):
         members = BoxList.from_json(filename=self.get_test_filename(
@@ -242,21 +241,21 @@ def process_changed_bot(
         base_repo, botname_dirs, changed_filenames, head_repo, pull_request,
         user_dirs, changed_filetypes, from_mock,
         github_client:github.Github) -> \
-        Tuple[Union[Response, List[Response]], bool]:
+        Tuple[Union[PrResponse, List[PrResponse]], bool]:
     should_gen = False
     user_dirs = list(user_dirs)
     if len(user_dirs) > 1:
-        resp = ErrorResponse(
+        resp = ErrorPrResponse(
             'Can only submit bots for one user at a time')
     elif len(botname_dirs) > 1:
-        resp = ErrorResponse('Can only submit one bot at a time')
+        resp = ErrorPrResponse('Can only submit one bot at a time')
     else:
         user_or_org_dir = user_dirs[0]
         botname = botname_dirs[0]
         if ['md'] == list(changed_filetypes):
             # Just a docs/readme change. Trigger leaderboard gen.
             should_gen = True
-            resp = RegenResponse('Markdown only change detected, '
+            resp = RegenPrResponse('Markdown only change detected, '
                                  'regenerating leaderboards')
         else:
             # Trigger bot evaluation
@@ -271,19 +270,3 @@ def process_changed_bot(
     return resp, should_gen
 
 
-def handle_results(eval_data: Box, results: Box, status: str):
-    """
-    Handles results POSTS from problem evaluators at the
-    """
-    # Get the eval_data using the result.eval_key
-
-    now = time.time()
-    results.username = eval_data.username
-    results.botname = eval_data.botname
-    results.problem_id = eval_data.problem_id
-    results.status = status
-    results.started = eval_data.started
-    results.finished = now
-    results.league_commit_sha = eval_data.league_commit_sha
-    results.source_commit = eval_data.source_commit
-    results.seed = eval_data.seed

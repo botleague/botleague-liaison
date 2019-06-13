@@ -3,9 +3,9 @@
 from os.path import join
 
 import constants
-from bot_eval import handle_results
+from results_view import add_eval_data_to_results
 from pr_processor import PrProcessorMock
-from responses import ErrorResponse, StartedResponse, EvalStartedResponse
+from pr_responses import ErrorPrResponse, StartedPrResponse, EvalStartedPrResponse
 
 from botleague_helpers.config import activate_test_mode, blconfig, \
     get_test_name_from_callstack
@@ -23,7 +23,7 @@ assert blconfig.is_test
 def test_move_plus_modify():
     pr_processor = PrProcessorMock()
     resp, status = pr_processor.process_changes()
-    assert isinstance(resp, ErrorResponse)
+    assert isinstance(resp, ErrorPrResponse)
     assert resp.msg == constants.RENAME_PROBLEM_ERROR_MSG
     # TODO: assert much more here
 
@@ -49,13 +49,13 @@ def bot_eval_helper():
     assert len(responses) == 1
     resp = responses[0]
     eval_data = resp.eval_data
-    assert isinstance(resp, EvalStartedResponse)
+    assert isinstance(resp, EvalStartedPrResponse)
     username = eval_data.username
     botname = eval_data.botname
     results = Mockable.read_test_box(join(constants.BOTS_DIR, username, botname,
                                           'results.json'))
     results.eval_key = eval_data.eval_key
-    handle_results(eval_data, results, 'success')
+    add_eval_data_to_results(eval_data, results)
 
 
     # TODO: assert much more here
