@@ -27,9 +27,6 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
     if not eval_key:
         error.http_status_code = 400
         error.msg = 'eval_key must be in JSON data payload'
-    elif 'results' not in result_payload:
-        error.http_status_code = 400
-        error.msg = 'No "results" found in request'
     else:
         db_key = get_eval_db_key(eval_key)
         # eval_key is secret
@@ -38,11 +35,13 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
             error.http_status_code = 400
             error.msg = 'Could not find evaluation with that key'
         else:
+            if 'error' in result_payload:
+                error.http_status_code = 500
+                error.msg = result_payload.error
+            elif 'results' not in result_payload:
+                error.http_status_code = 400
+                error.msg = 'No "results" found in request'
             add_eval_data_to_results(eval_data, results)
-
-    if 'error' in result_payload:
-        error.http_status_code = 500
-        error.msg = result_payload.error
 
     return error, results
 

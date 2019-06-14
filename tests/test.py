@@ -51,7 +51,25 @@ def test_results_handler():
     eval_data = Mockable.read_test_box('eval_data.json')
     kv.set(db_key, eval_data)
     error, results = process_results(payload, kv)
-    assert 'error' not in results
+    assert not error
+    assert 'finished' in results
+    assert 'started' in results
+    assert results.started < results.finished
+    assert results.username == 'crizcraig'
+    assert results.botname == 'forward-agent'
+    assert results.problem_id == 'deepdrive/domain_randomization'
+
+
+def test_results_handler_server_error():
+
+    payload = Mockable.read_test_box('results_error.json')
+    kv = get_key_value_store()
+    db_key = get_eval_db_key(payload.eval_key)
+    eval_data = Mockable.read_test_box('eval_data.json')
+    kv.set(db_key, eval_data)
+    error, results = process_results(payload, kv)
+    assert error
+    assert error.http_status_code == 500
     assert 'finished' in results
     assert 'started' in results
     assert results.started < results.finished
