@@ -1,6 +1,7 @@
 import time
 
-from botleague_helpers.key_value_store import get_key_value_store
+from botleague_helpers.key_value_store import get_key_value_store, \
+    SimpleKeyValueStore
 from box import Box
 
 from bot_eval import get_eval_db_key
@@ -8,29 +9,42 @@ from bot_eval import get_eval_db_key
 
 def handle_results_request(request):
     data = Box(request.json)
-    eval_key = data.get('eval_key', '')
-    results = data.get('results', Box())
+    kv = get_key_value_store()
+    error, results = process_results(data, kv)
+
+    if error.msg:
+        request.response.status = error.http_status_code
+        results.error = error
+
+    # TODO: Post results to gist
+
+
+def process_results(result_payload: Box, kv: SimpleKeyValueStore):
+    eval_key = result_payload.get('eval_key', '')
+    results = result_payload.get('results', Box())
     results.finished = time.time()
+    error = Box(default_box=True)
     if not eval_key:
-        request.response.status = 400
-        results.error = 'eval_key must be in JSON data payload'
-    elif 'error' in data:
-        request.response.status = 400
-        results.error = data.error
-    elif 'results' not in data:
-        request.response.status = 400
-        results.error = 'No "results" found in request'
+        error.http_status_code = 400
+        error.msg = 'eval_key must be in JSON data payload'
+    elif 'results' not in result_payload:
+        error.http_status_code = 400
+        error.msg = 'No "results" found in request'
     else:
         db_key = get_eval_db_key(eval_key)
         # eval_key is secret
-        kv = get_key_value_store()
         eval_data = Box(kv.get(db_key))
         if not eval_data:
-            request.response.status = 400
-            results.error = 'Could not find evaluation with that key'
+            error.http_status_code = 400
+            error.msg = 'Could not find evaluation with that key'
         else:
             add_eval_data_to_results(eval_data, results)
-    # TODO: Post results to gist
+
+    if 'error' in result_payload:
+        error.http_status_code = 500
+        error.msg = result_payload.error
+
+    return error, results
 
 
 def add_eval_data_to_results(eval_data: Box, results: Box):
