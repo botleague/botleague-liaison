@@ -4,4 +4,4 @@ firebase-admin==2.16.0
 google-cloud-firestore==0.32.1
 cryptography==2.6.1
 python-box
-botleague-helpers
+botleague-helpers==0.0.2
