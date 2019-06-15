@@ -15,6 +15,10 @@ def handle_results_request(request):
     if error.msg:
         request.response.status = error.http_status_code
         results.error = error
+    else:
+        request.response.status = 200
+
+    return results
 
     # TODO: Post results to gist
 
