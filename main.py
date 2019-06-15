@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from wsgiref.simple_server import make_server
+from pyramid import httpexceptions
 
 from botleague_helpers.key_value_store import get_key_value_store
 from box import Box
@@ -18,6 +19,7 @@ from pr_responses import ErrorPrResponse
 from results_view import handle_results_request
 
 
+
 @view_defaults(
     route_name='github_payload', renderer='json', request_method='POST'
 )
@@ -29,8 +31,25 @@ class PayloadView(object):
 
     def __init__(self, request):
         self.request = request
+        hmac_sig = self.request.headers.get('X-Hub-Signature')
+        if hmac_sig is not None:
+            self.check_hmac(hmac_sig)
+
         # Payload from Github, it's a dict
         self.payload = self.request.json
+
+    def check_hmac(self, hmac_sig):
+        import hmac
+        import hashlib
+        kv = get_key_value_store()
+        shared_secret = kv.get('BL_GITHUB_WEBOOK_SECRET')
+        shared_secret = bytes(shared_secret, 'utf-8')
+        hmac_gen = hmac.new(shared_secret, digestmod=hashlib.sha1)
+        hmac_gen.update(self.request.body)
+        hmac_sig_check = hmac_gen.hexdigest()
+        hmac_sig = hmac_sig[5:]
+        if hmac_sig != hmac_sig_check:
+            raise httpexceptions.HTTPForbidden('Webhook HMAC does not match')
 
     @view_config(header='X-Github-Event:push')
     def payload_push(self):
