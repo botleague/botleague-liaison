@@ -74,8 +74,8 @@ def diagnostics(request):
 
 
 def results(request):
-    return handle_results_request(request)
-
+    ret = handle_results_request(request).to_dict()
+    return ret
 
 def root(request):
     return Response('yo')
