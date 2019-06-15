@@ -31,14 +31,16 @@ class PayloadView(object):
 
     def __init__(self, request):
         self.request = request
-        hmac_sig = self.request.headers.get('X-Hub-Signature')
-        if hmac_sig is not None:
-            self.check_hmac(hmac_sig)
+        if not blconfig.is_test:
+            self.check_hmac()
 
         # Payload from Github, it's a dict
         self.payload = self.request.json
 
-    def check_hmac(self, hmac_sig):
+    def check_hmac(self):
+        hmac_sig = self.request.headers.get('X-Hub-Signature')
+        if not hmac_sig:
+            raise httpexceptions.HTTPForbidden('No X-Hub-Signature found')
         import hmac
         import hashlib
         kv = get_key_value_store()
@@ -49,7 +51,9 @@ class PayloadView(object):
         hmac_sig_check = hmac_gen.hexdigest()
         hmac_sig = hmac_sig[5:]
         if hmac_sig != hmac_sig_check:
-            raise httpexceptions.HTTPForbidden('Webhook HMAC does not match')
+            raise httpexceptions.HTTPForbidden(
+                'Webhook HMAC in X-Hub-Signature does not match. Check secret'
+                ' key in webhook matches BL_GITHUB_WEBOOK_SECRET in Firestore')
 
     @view_config(header='X-Github-Event:push')
     def payload_push(self):
