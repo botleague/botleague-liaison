@@ -7,6 +7,9 @@ from bot_eval import get_eval_db_key
 
 
 def handle_results_request(request):
+    """
+    Handles results POSTS from problem evaluators at the end of evaluation
+    """
     data = Box(request.json)
     eval_key = data.get('eval_key', '')
     results = data.get('results', Box())
@@ -22,7 +25,6 @@ def handle_results_request(request):
         results.error = 'No "results" found in request'
     else:
         db_key = get_eval_db_key(eval_key)
-        # eval_key is secret
         kv = get_key_value_store()
         eval_data = Box(kv.get(db_key))
         if not eval_data:
@@ -34,11 +36,6 @@ def handle_results_request(request):
 
 
 def add_eval_data_to_results(eval_data: Box, results: Box):
-    """
-    Handles results POSTS from problem evaluators at the
-    """
-    # Get the eval_data using the result.eval_key
-
     results.username = eval_data.username
     results.botname = eval_data.botname
     results.problem_id = eval_data.problem_id
