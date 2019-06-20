@@ -2,8 +2,11 @@
 # Set SHOULD_RECORD=true to record changed-files.json
 from os.path import join
 
+from botleague_helpers.key_value_store import get_key_value_store
+
 import constants
-from results_view import add_eval_data_to_results
+from bot_eval import get_eval_db_key
+from results_view import add_eval_data_to_results, process_results
 from pr_processor import PrProcessorMock
 from pr_responses import ErrorPrResponse, StartedPrResponse, EvalStartedPrResponse
 
@@ -38,6 +41,41 @@ def test_bot_eval_org():
 
 def test_bot_eval_missing_source_commit():
     bot_eval_helper()
+
+
+def test_results_handler():
+
+    payload = Mockable.read_test_box('results_success.json')
+    kv = get_key_value_store()
+    db_key = get_eval_db_key(payload.eval_key)
+    eval_data = Mockable.read_test_box('eval_data.json')
+    kv.set(db_key, eval_data)
+    error, results = process_results(payload, kv)
+    assert not error
+    assert 'finished' in results
+    assert 'started' in results
+    assert results.started < results.finished
+    assert results.username == 'crizcraig'
+    assert results.botname == 'forward-agent'
+    assert results.problem_id == 'deepdrive/domain_randomization'
+
+
+def test_results_handler_server_error():
+
+    payload = Mockable.read_test_box('results_error.json')
+    kv = get_key_value_store()
+    db_key = get_eval_db_key(payload.eval_key)
+    eval_data = Mockable.read_test_box('eval_data.json')
+    kv.set(db_key, eval_data)
+    error, results = process_results(payload, kv)
+    assert error
+    assert error.http_status_code == 500
+    assert 'finished' in results
+    assert 'started' in results
+    assert results.started < results.finished
+    assert results.username == 'crizcraig'
+    assert results.botname == 'forward-agent'
+    assert results.problem_id == 'deepdrive/domain_randomization'
 
 
 def bot_eval_helper():
