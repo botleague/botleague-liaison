@@ -16,7 +16,7 @@ python main.py
 ``` 
 
 ```
-~/bin/ngrok http 888
+~/bin/ngrok http 8888
 ```
 
 Test hooks within https://github.com/botleague/botleague/settings/hooks
