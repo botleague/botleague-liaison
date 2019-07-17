@@ -75,7 +75,7 @@ class PayloadView(object):
         action = self.payload['action']
         if action in ['opened', 'synchronize', 'reopened']:
             pr_processor = get_pr_processor()
-            pr_processor.pr_event = Box(self.payload.raw_data)
+            pr_processor.pr_event = Box(self.payload)
             pr_processor.process_changes()
 
         # do busy work...
@@ -99,6 +99,7 @@ def diagnostics(request):
 def results(request):
     ret = handle_results_request(request).to_dict()
     return ret
+
 
 def root(request):
     return Response('Botleague liaison service<br>https://github.com/botleague/botleague-liaison<br>https://drive.google.com/file/d/1Zqa9ykc4w6yrOVSdmQCPkxUMbUPjQQRg/view')
