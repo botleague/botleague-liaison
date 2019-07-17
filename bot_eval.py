@@ -70,8 +70,7 @@ class BotEvalBase:
                                   self.changed_filenames)
         return ret
 
-        # TODO: Copy the docker image over to GCR
-        # TODO: Handle cases where only readme changes
+        # TODO: Copy the bot image over to GCR
 
     def get_ref(self, bot_def_filename: str) -> str:
         for changed_file in self.changed_files:
