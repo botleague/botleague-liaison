@@ -42,7 +42,7 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
         if not eval_data:
             error.http_status_code = 400
             error.msg = 'Could not find evaluation with that key'
-        elif not eval_data['status'] == constants.EVAL_STATUS_STARTED:
+        elif not eval_data.status == constants.EVAL_STATUS_STARTED:
             error.http_status_code = 400
             error.msg = 'This evaluation has already been processed'
         else:
