@@ -24,6 +24,7 @@ def handle_results_request(request):
     return results
 
     # TODO: Post results to gist
+    # TODO: Set status on eval_data to complete
 
 
 def process_results(result_payload: Box, kv: SimpleKeyValueStore):
