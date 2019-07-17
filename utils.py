@@ -13,10 +13,13 @@ log.basicConfig(level=log.INFO)
 from github import UnknownObjectException
 
 
-def get_file_from_github(repo, filename):
+def get_file_from_github(repo, filename, ref=None):
     """@:param filename: relative path to file in repo"""
     try:
-        contents = repo.get_contents(filename)
+        args = [filename]
+        if ref is not None:
+            args.append(ref)
+        contents = repo.get_contents(*args)
         content_str = contents.decoded_content.decode('utf-8')
     except UnknownObjectException:
         log.error('Unable to find %s in %s', filename, repo.html_url)

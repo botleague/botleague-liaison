@@ -26,7 +26,7 @@ class PrProcessorBase:
     head_repo: github.Repository = None
     pull_number: int = -1
     pr_event: Box
-    changed_files: List[Box]
+    changed_files: List[Box] = None
     _github_client: github.Github = None
 
     def __init__(self, *args, **kwargs):
@@ -57,7 +57,7 @@ class PrProcessorBase:
 
         resp, should_gen = self.dispatch(
             base_dirs, botname_dirs, changed_filenames, changed_filetypes,
-            err, pull_request, should_gen, user_org_dirs)
+            self.changed_files, err, pull_request, should_gen, user_org_dirs)
         if should_gen:
             SimpleKeyValueStore().set(blconfig.should_gen_key, True)
 
@@ -94,7 +94,8 @@ class PrProcessorBase:
         return status, msg
 
     def dispatch(self, base_dirs, botname_dirs, changed_filenames,
-                 changed_filetypes, err, pull_request, should_gen,
+                 changed_filetypes, changed_files,
+                 err, pull_request, should_gen,
                  user_dirs) -> Tuple[Union[PrResponse, List[PrResponse]], bool]:
         if err is not None:
             resp = err
@@ -103,6 +104,7 @@ class PrProcessorBase:
                 base_repo=self.base_repo,
                 botname_dirs=botname_dirs,
                 changed_filenames=changed_filenames,
+                changed_files=changed_files,
                 head_repo=self.head_repo,
                 pull_request=pull_request,
                 user_dirs=user_dirs,
@@ -158,7 +160,7 @@ class PrProcessor(PrProcessorBase):
         self.pr_event = pr_event
 
     def get_changed_files(self) -> List[Box]:
-        if self.changed_files is not None:
+        if self.changed_files is None:
             ret = list(self.base_repo.get_pull(self.pull_number).get_files())
             ret = [Box(r.raw_data) for r in ret]
             self.changed_files = ret
@@ -222,7 +224,7 @@ def get_pr_processor(pr_event=None) -> PrProcessorBase:
     return ret
 
 
-def group_changed_files(changed_files):
+def group_changed_files(changed_files: List[Box]):
     base_dirs = set()
     user_org_dirs = set()
     botname_dirs = set()

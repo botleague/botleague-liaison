@@ -21,6 +21,7 @@ from utils import generate_rand_alphanumeric
 class BotEvalBase:
     botname: str
     changed_filenames: List[str]
+    changed_files: List[Box]
     user_or_org_dir: str
     base_repo: Repository
     head_repo: Repository
@@ -28,11 +29,13 @@ class BotEvalBase:
     seed: int
     github_client: github.Github
 
-    def __init__(self, botname, changed_filenames, user_or_org_dir, base_repo,
+    def __init__(self, botname, changed_filenames, changed_files,
+                 user_or_org_dir, base_repo,
                  head_repo, pull_request, github_client):
         super().__init__()  # Support multiple inheritance
         self.botname = botname
         self.changed_filenames: List[str] = changed_filenames
+        self.changed_files: List[Box] = changed_files
         self.user_or_org_dir = user_or_org_dir
         self.base_repo = base_repo
         self.head_repo = head_repo
@@ -55,7 +58,9 @@ class BotEvalBase:
             if len(bot_def_filenames) > 1:
                 ret = ErrorPrResponse('Only one bot per pull request allowed')
             else:
-                ret = self.eval_bot(bot_def_filenames[0])
+                bot_def_filename = bot_def_filenames[0]
+                changed_ref = self.get_ref(bot_def_filename)
+                ret = self.eval_bot(bot_def_filename, changed_ref)
         elif bot_readme_filenames:
             # Yes, this is handled already in processed_changed_bots, so
             # it's redundant.
@@ -68,8 +73,25 @@ class BotEvalBase:
         # TODO: Copy the docker image over to GCR
         # TODO: Handle cases where only readme changes
 
-    def eval_bot(self, bot_def_filename) -> Union[PrResponse, List[PrResponse]]:
-        bot_def = self.github_get(self.head_repo, bot_def_filename)
+    def get_ref(self, bot_def_filename: str) -> str:
+        for changed_file in self.changed_files:
+            if changed_file.filename == bot_def_filename:
+                bot_def_file = changed_file
+                import urllib.parse as urlparse
+                parsed = urlparse.urlparse(bot_def_file.contents_url)
+                changed_ref = urlparse.parse_qs(parsed.query)['ref'][0]
+                break
+        else:
+            raise RuntimeError('Could not find ref for changed file %s '
+                               % bot_def_filename)
+        return changed_ref
+
+    def eval_bot(self, bot_def_filename: str,
+                 bot_def_ref: str) -> Union[PrResponse, List[PrResponse]]:
+        bot_def = self.github_get(self.head_repo, bot_def_filename,
+                                  ref=bot_def_ref)
+        if not bot_def:
+            return ErrorPrResponse('Could not find bot.json')
         bot_def.source_commit = bot_def.get('source_commit', '')
 
         if self.user_or_org_dir != self.league_commit_user:
@@ -150,7 +172,7 @@ class BotEvalBase:
         ret = any(m['login'].lower() == user.lower() for m in members)
         return ret
 
-    def github_get(self, repo, filename):
+    def github_get(self, repo, filename, ref=None):
         raise NotImplementedError()
 
     def user_in_org(self, user, org):
@@ -161,9 +183,9 @@ class BotEval(BotEvalBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def github_get(self, repo, filename):
+    def github_get(self, repo, filename, ref=None):
         from utils import get_file_from_github
-        return get_file_from_github(repo, filename)
+        return get_file_from_github(repo, filename, ref)
 
     @staticmethod
     def request_eval(endpoint: str, eval_data: Box) -> PrResponse:
@@ -205,7 +227,7 @@ class BotEvalMock(BotEvalBase, Mockable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def github_get(self, _repo, filename):
+    def github_get(self, _repo, filename, ref=None):
         filepath = self.get_test_filename(filename)
         content_str = read_file(filepath)
         ret = get_str_or_box(content_str, filepath)
@@ -238,7 +260,8 @@ def get_bot_eval(use_mock):
 
 
 def process_changed_bot(
-        base_repo, botname_dirs, changed_filenames, head_repo, pull_request,
+        base_repo, botname_dirs, changed_filenames,
+        changed_files, head_repo, pull_request,
         user_dirs, changed_filetypes, from_mock,
         github_client:github.Github) -> \
         Tuple[Union[PrResponse, List[PrResponse]], bool]:
