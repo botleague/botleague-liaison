@@ -190,7 +190,7 @@ class BotEval(BotEvalBase):
         return ret
 
     def user_in_org(self, user, org):
-        public_members = list(self.github_client.get_organization('deepdrive')
+        public_members = list(self.github_client.get_organization(org)
                               .get_public_members())
         ret = user in public_members
         return ret
