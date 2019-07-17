@@ -5,7 +5,7 @@ and handles their results
 
 ## Run tests
 
-pytest tests/*
+pytest -v tests/*
 
 ## Running locally
 
