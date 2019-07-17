@@ -222,6 +222,7 @@ class BotEval(BotEvalBase):
 
 
 def get_eval_db_key(eval_key):
+    # Prefix since we are going into our GCP app's global datastore
     return '%s_%s' % (constants.ONGOING_EVALUATIONS_KEY_PREFIX,
                       eval_key)
 
