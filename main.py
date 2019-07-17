@@ -101,7 +101,7 @@ def results(request):
     return ret
 
 def root(request):
-    return Response('yo')
+    return Response('Botleague liaison service<br>https://github.com/botleague/botleague-liaison<br>https://drive.google.com/file/d/1Zqa9ykc4w6yrOVSdmQCPkxUMbUPjQQRg/view')
 
 
 def adhoc():
