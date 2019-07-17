@@ -204,7 +204,7 @@ class BotEval(BotEvalBase):
                        endpoint_resp.content))
             else:
                 kv = get_key_value_store()
-                db_key = get_eval_db_key(eval_data.eval_data)
+                db_key = get_eval_db_key(eval_data.eval_key)
                 kv.set(db_key, eval_data)
                 ret = EvalStartedPrResponse('Started evaluation at %s' %
                                             endpoint, eval_data)
