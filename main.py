@@ -117,10 +117,10 @@ def adhoc():
     #
     # user_org = github_client.get_user('deepdrive')
 
-    status = create_status('error', 'error msg', commit_sha, github_client,
-                            repo_name)
-
-    print(status)
+    # status = create_status('error', 'error msg', commit_sha, github_client,
+    #                         repo_name)
+    #
+    # print(status)
     # Then play with your Github objects:
     # for repo in github_client.get_user().get_repos():
     #     print(repo.name)
