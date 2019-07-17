@@ -279,7 +279,7 @@ def process_changed_bot(
             # Just a docs/readme change. Trigger leaderboard gen.
             should_gen = True
             resp = RegenPrResponse('Markdown only change detected, '
-                                 'regenerating leaderboards')
+                                   'regenerating leaderboards')
         else:
             # Trigger bot evaluation
             evaluator = get_bot_eval(use_mock=from_mock)(
