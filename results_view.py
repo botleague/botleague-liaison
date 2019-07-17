@@ -5,7 +5,7 @@ from botleague_helpers.key_value_store import get_key_value_store, \
 from box import Box
 
 from bot_eval import get_eval_db_key
-
+import constants
 
 def handle_results_request(request):
     """
@@ -42,6 +42,9 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
         if not eval_data:
             error.http_status_code = 400
             error.msg = 'Could not find evaluation with that key'
+        elif not eval_data['status'] == constants.EVAL_STATUS_STARTED:
+            error.http_status_code = 400
+            error.msg = 'This evaluation has already been processed'
         else:
             if 'error' in result_payload:
                 error.http_status_code = 500
