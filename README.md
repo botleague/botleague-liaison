@@ -11,7 +11,9 @@ pytest tests/*
 
 ! Don't install PyCharm's App Engine support ! Just run it as a normal Python project.
 
-Run main.py
+```
+python main.py
+``` 
 
 ```
 ~/bin/ngrok http 888
