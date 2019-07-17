@@ -214,6 +214,10 @@ class BotEval(BotEvalBase):
     def user_in_org(self, user, org):
         public_members = list(self.github_client.get_organization(org)
                               .get_public_members())
+        # TODO: We should also be checking that the user has commit or some higher
+        #   level access than just member. i.e. EpicGames members should
+        #   not be creating EpicGames problems.
+        public_members = [p.login.lower() for p in public_members]
         ret = user in public_members
         return ret
 
@@ -244,9 +248,6 @@ class BotEvalMock(BotEvalBase, Mockable):
     def user_in_org(self, user, org):
         members = BoxList.from_json(filename=self.get_test_filename(
             'github_org_{org}_public_members.json').format(org=org))
-        # TODO: We should also be checking that the user has commit or some higher
-        #   level access than just member. i.e. EpicGames members should
-        #   not be creating EpicGames problems.
         ret = self.user_in_members(user, members)
         return ret
 
