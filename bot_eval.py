@@ -285,6 +285,7 @@ def process_changed_bot(
             evaluator = get_bot_eval(use_mock=from_mock)(
                 botname=botname,
                 changed_filenames=changed_filenames,
+                changed_files=changed_files,
                 user_or_org_dir=user_or_org_dir,
                 base_repo=base_repo, head_repo=head_repo,
                 pull_request=pull_request,
