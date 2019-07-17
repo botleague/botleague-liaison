@@ -7,6 +7,7 @@ from box import Box
 from bot_eval import get_eval_db_key
 import constants
 
+
 def handle_results_request(request):
     """
     Handles results POSTS from problem evaluators at the end of evaluation
