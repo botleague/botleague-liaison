@@ -1,12 +1,8 @@
-from os.path import join
-from box import Box
-
 from botleague_helpers.config import disable_firestore_access
-import constants
-from pr_processor import PrProcessor
+from handlers.pr_handler import PrProcessor
 from tests.mockable import Mockable
-from tests.test_constants import TEST_DIR, CHANGED_FILES_FILENAME
-from utils import read_json, write_json
+from tests.test_constants import CHANGED_FILES_FILENAME
+from utils import write_json
 
 # Just use a local github token, no need to fetch from firestore.
 # Also, we don't want to be setting things like
