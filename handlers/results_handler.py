@@ -42,10 +42,13 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
         if not eval_data:
             error.http_status_code = 400
             error.msg = 'Could not find evaluation with that key'
-        elif not eval_data.status == constants.EVAL_STATUS_STARTED:
+        elif eval_data.status == constants.EVAL_STATUS_STARTED:
+            error.http_status_code = 400
+            error.msg = 'This evaluation has not been confirmed'
+        elif eval_data.status == constants.EVAL_STATUS_COMPLETE:
             error.http_status_code = 400
             error.msg = 'This evaluation has already been processed'
-        else:
+        elif eval_data.status == constants.EVAL_STATUS_CONFIRMED:
             if 'error' in result_payload:
                 error.http_status_code = 500
                 error.msg = result_payload.error
@@ -53,6 +56,9 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
                 error.http_status_code = 400
                 error.msg = 'No "results" found in request'
             add_eval_data_to_results(eval_data, results)
+        else:
+            error.http_status_code = 400
+            error.msg = 'Eval data status unknown %s' % eval_data.status
 
     return error, results
 

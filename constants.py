@@ -14,6 +14,8 @@ CI_STATUS_PENDING = 'pending'
 CI_STATUS_SUCCESS = 'success'
 
 EVAL_STATUS_STARTED = 'started'
+EVAL_STATUS_CONFIRMED = 'confirmed'
+EVAL_STATUS_COMPLETE = 'complete'
 
 ONGOING_EVALUATIONS_COLLECTION_NAME = 'botleague_ongoing_evaluations'
 ONGOING_EVALUATIONS_KEY_PREFIX = 'botleague_eval'
