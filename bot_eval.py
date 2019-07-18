@@ -10,7 +10,7 @@ import requests
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
 from botleague_helpers.key_value_store import get_key_value_store
 from github import Repository
-from pr_responses import ErrorPrResponse, RegenPrResponse, \
+from responses.pr_responses import ErrorPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
 from tests.mockable import Mockable
 from utils import read_file, get_str_or_box

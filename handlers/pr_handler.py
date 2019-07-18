@@ -1,4 +1,3 @@
-from os.path import join
 from typing import List, Union, Tuple
 
 import logging as log
@@ -11,7 +10,7 @@ from box import Box
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
 from botleague_helpers.key_value_store import SimpleKeyValueStore
-from pr_responses import ErrorPrResponse, StartedPrResponse, RegenPrResponse, \
+from responses.pr_responses import ErrorPrResponse, StartedPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalStartedPrResponse, EvalErrorPrResponse
 import constants
 from tests.mockable import Mockable
