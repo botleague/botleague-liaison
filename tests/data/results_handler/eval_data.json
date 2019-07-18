@@ -5,7 +5,7 @@
   "problem_id": "deepdrive/domain_randomization",
   "botname": "forward-agent",
   "username": "crizcraig",
-  "status": "started",
+  "status": "confirmed",
   "started": 1560536035.519979,
   "source_commit": "https://github.com/crizCraig/forward-agent/commit/fefc93d95944099d3e61cda6542bb4ffe7a28abf",
   "league_commit_sha": "2af6da04a51a42ea1bb0fb705d66d87e53102678",

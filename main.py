@@ -29,6 +29,11 @@ def results(request):
     return ret
 
 
+def confirm(request):
+    ret = handle_confirm_request(request).to_dict()
+    return ret
+
+
 def root(request):
     return Response('Botleague liaison service<br>https://github.com/botleague/botleague-liaison<br>https://drive.google.com/file/d/1Zqa9ykc4w6yrOVSdmQCPkxUMbUPjQQRg/view')
 
@@ -64,10 +69,12 @@ with Configurator() as config:
     config.add_route(name='diagnostics', pattern='/diagnostics')
     config.add_view(view=diagnostics, route_name='diagnostics')
 
+    config.add_route(name='confirm', pattern='/confirm')
+    config.add_view(view=confirm, route_name='confirm', renderer='json')
+
     config.add_route(name='results', pattern='/results')
     config.add_view(view=results, route_name='results', renderer='json')
 
-    # TODO: Implement confirm request
     """
     ##### 2. Send `/confirm` POST
     
