@@ -3,6 +3,8 @@
 GAE app that consumes github hooks, triggers Botleague evaluations, 
 and handles their results
 
+For info on the API, flow, etc.. see the [botleague docs](https://github.com/botleague/botleague)
+
 ## Run tests
 
 pytest -v tests/*
