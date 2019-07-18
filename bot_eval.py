@@ -135,6 +135,7 @@ class BotEvalBase:
         raise NotImplementedError()
 
     def get_eval_data(self, eval_id, eval_key, problem_id, bot_def) -> Box:
+        # TODO: Move this to models/eval_data
         pull_number = self.pr_event.number
         pull_url = self.pr_event.url
         pull_request_updated_at = self.pr_event.updated_at
