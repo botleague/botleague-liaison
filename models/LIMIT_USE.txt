@@ -1,0 +1,10 @@
+Most of botleague is open data, i.e. results, evaluations, artifacts,
+logs, etc... This promotes transparency and trust in scores and also allows others
+to much more easily contribute and extend botleague.
+
+Some accounting data is secured, like eval_keys, to prevent cheating. Otherwise
+use GitHub to manage user info.
+
+Therefore, PLEASE THINK TWICE before adding new models here and use the public
+storage mechanisms like GCS, S3, gist, Travis, YouTube, etc... instead if the data
+can be made public.
