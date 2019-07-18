@@ -6,6 +6,7 @@ from box import Box
 
 from bot_eval import get_eval_db_key
 import constants
+from models.eval_data import get_eval_data
 
 
 def handle_results_request(request):
@@ -37,9 +38,7 @@ def process_results(result_payload: Box, kv: SimpleKeyValueStore):
         error.http_status_code = 400
         error.msg = 'eval_key must be in JSON data payload'
     else:
-        db_key = get_eval_db_key(eval_key)
-        # eval_key is secret
-        eval_data = Box(kv.get(db_key))
+        eval_data = get_eval_data(eval_key, kv)
         if not eval_data:
             error.http_status_code = 400
             error.msg = 'Could not find evaluation with that key'
