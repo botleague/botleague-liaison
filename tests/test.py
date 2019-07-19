@@ -49,7 +49,7 @@ def test_db_invalid_key_handler():
     eval_data = Mockable.read_test_box('eval_data.json')
     kv.set(db_key, eval_data)
     try:
-        error, results = process_results(payload, kv)
+        error, results, eval_data = process_results(payload, kv)
     except RuntimeError as e:
         assert INVALID_DB_KEY_STATE_MESSAGE == str(e)
     else:
@@ -62,7 +62,7 @@ def test_results_handler():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     kv.set(db_key, eval_data)
-    error, results = process_results(payload, kv)
+    error, results, eval_data = process_results(payload, kv)
     assert not error
     assert 'finished' in results
     assert 'started' in results
@@ -78,7 +78,7 @@ def test_results_handler_server_error():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     kv.set(db_key, eval_data)
-    error, results = process_results(payload, kv)
+    error, results, eval_data = process_results(payload, kv)
     assert error
     assert error.http_status_code == 500
     assert 'finished' in results
@@ -95,7 +95,7 @@ def test_results_handler_not_confirmed():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     kv.set(db_key, eval_data)
-    error, results = process_results(payload, kv)
+    error, results, eval_data = process_results(payload, kv)
     assert error
     assert error.http_status_code == 400
     assert 'finished' in results
@@ -107,7 +107,7 @@ def test_results_handler_already_complete():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     kv.set(db_key, eval_data)
-    error, results = process_results(payload, kv)
+    error, results, eval_data = process_results(payload, kv)
     assert error
     assert error.http_status_code == 400
     assert 'finished' in results

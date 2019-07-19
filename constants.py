@@ -27,3 +27,5 @@ SHOULD_RECORD = 'SHOULD_RECORD' in os.environ
 
 # Error messages
 RENAME_PROBLEM_ERROR_MSG = 'Renaming problems currently not supported'
+
+BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME = 'BOTLEAGUE_RESULTS_GITHUB_TOKEN'
