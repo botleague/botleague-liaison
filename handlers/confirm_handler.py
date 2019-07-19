@@ -3,7 +3,7 @@ from botleague_helpers.key_value_store import get_key_value_store, \
 from box import Box
 
 import constants
-from models.eval_data import get_eval_data, set_eval_data
+from models.eval_data import get_eval_data, save_eval_data
 
 
 def handle_confirm_request(request):
@@ -48,7 +48,7 @@ def process_confirm(result_payload: Box, kv: SimpleKeyValueStore):
                 # confirmed!
                 resp.confirmed = True
                 eval_data.status = constants.EVAL_STATUS_CONFIRMED
-                set_eval_data(eval_data, kv)
+                save_eval_data(eval_data, kv)
         else:
             error.http_status_code = 400
             error.msg = 'Eval data status unknown %s' % eval_data.status
