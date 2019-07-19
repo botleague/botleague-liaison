@@ -27,7 +27,7 @@ class IgnorePrResponse(PrResponse):
 
 
 class EvalStartedPrResponse(StartedPrResponse):
-    eval_data: Box = None
+    eval_data: Optional[Box] = None
 
     def __init__(self, msg, eval_data):
         super().__init__(msg)
