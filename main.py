@@ -82,8 +82,6 @@ with Configurator() as config:
     should abort the evaluation.
     """
 
-    # TODO: Route results POST request to handle_results, and set
-    #  should_gen_leaderboard to true
     """
     ##### 3. Send `results.json` POST
     
