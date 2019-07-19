@@ -18,7 +18,7 @@ def get_eval_data(eval_key, kv: SimpleKeyValueStore) -> Box:
     return eval_data
 
 
-def set_eval_data(eval_data: Box, kv: SimpleKeyValueStore):
+def save_eval_data(eval_data: Box, kv: SimpleKeyValueStore):
     db_key = get_eval_db_key(eval_data.eval_key)
     # eval_key is secret, do not make public anywhere!
     kv.set(db_key, eval_data)

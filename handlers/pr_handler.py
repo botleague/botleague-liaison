@@ -15,7 +15,7 @@ from responses.pr_responses import ErrorPrResponse, StartedPrResponse, RegenPrRe
 import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
-from utils import read_json
+from utils import read_json, trigger_leaderboard_generation
 
 log.basicConfig(level=log.INFO)
 
@@ -58,7 +58,7 @@ class PrProcessorBase:
             base_dirs, botname_dirs, changed_filenames, changed_filetypes,
             self.changed_files, err, pull_request, should_gen, user_org_dirs)
         if should_gen:
-            SimpleKeyValueStore().set(blconfig.should_gen_key, True)
+            trigger_leaderboard_generation()
 
         status = self.create_status(resp, commit_sha, self.github_client,
                                     base_repo_name)

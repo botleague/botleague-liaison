@@ -2,6 +2,8 @@ import json
 import os
 import os.path as p
 
+from botleague_helpers.config import blconfig
+from botleague_helpers.key_value_store import SimpleKeyValueStore
 from box import Box
 
 import constants as c
@@ -87,3 +89,8 @@ def generate_rand_alphanumeric(num_chars):
     alphabet = string.ascii_uppercase + string.digits
     ret = ''.join(choice(alphabet) for _ in range(num_chars))
     return ret
+
+
+def trigger_leaderboard_generation():
+    SimpleKeyValueStore().set(blconfig.should_gen_key, True)
+
