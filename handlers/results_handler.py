@@ -103,6 +103,8 @@ def process_results(result_payload: Box,
                 error.http_status_code = 400
                 error.msg = 'No "results" found in request'
             add_eval_data_to_results(eval_data, results)
+            post_results_to_gist(kv, results)
+            trigger_leaderboard_generation(kv)
         else:
             error.http_status_code = 400
             error.msg = 'Eval data status unknown %s' % eval_data.status
