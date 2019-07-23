@@ -75,39 +75,39 @@ def post_results_to_gist(kv, results) -> Optional[github.Gist.Gist]:
 
 
 def process_results(result_payload: Box,
-                    kv: SimpleKeyValueStore) -> Tuple[Box, Box, Box]:
+                    kv: SimpleKeyValueStore) -> Tuple[Error, Box, Box]:
     eval_key = result_payload.get('eval_key', '')
     results = result_payload.get('results', Box())
     results.finished = time.time()
-    error = Box(default_box=True)
+    error = Error()
     eval_data = Box()
     if not eval_key:
         error.http_status_code = 400
-        error.msg = 'eval_key must be in JSON data payload'
+        error.message = 'eval_key must be in JSON data payload'
     else:
         eval_data = get_eval_data(eval_key, kv)
         if not eval_data:
             error.http_status_code = 400
-            error.msg = 'Could not find evaluation with that key'
+            error.message = 'Could not find evaluation with that key'
         elif eval_data.status == constants.EVAL_STATUS_STARTED:
             error.http_status_code = 400
-            error.msg = 'This evaluation has not been confirmed'
+            error.message = 'This evaluation has not been confirmed'
         elif eval_data.status == constants.EVAL_STATUS_COMPLETE:
             error.http_status_code = 400
-            error.msg = 'This evaluation has already been processed'
+            error.message = 'This evaluation has already been processed'
         elif eval_data.status == constants.EVAL_STATUS_CONFIRMED:
             if 'error' in result_payload:
                 error.http_status_code = 500
-                error.msg = result_payload.error
+                error.message = result_payload.error
             elif 'results' not in result_payload:
                 error.http_status_code = 400
-                error.msg = 'No "results" found in request'
+                error.message = 'No "results" found in request'
             add_eval_data_to_results(eval_data, results)
             post_results_to_gist(kv, results)
             trigger_leaderboard_generation(kv)
         else:
             error.http_status_code = 400
-            error.msg = 'Eval data status unknown %s' % eval_data.status
+            error.message = 'Eval data status unknown %s' % eval_data.status
 
     return error, results, eval_data
 
