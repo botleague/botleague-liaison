@@ -69,7 +69,7 @@ def test_results_handler():
     assert results.started < results.finished
     assert results.username == 'crizcraig'
     assert results.botname == 'forward-agent'
-    assert results.problem_id == 'deepdrive/domain_randomization'
+    assert results.problem == 'deepdrive/domain_randomization'
 
 
 def test_results_handler_server_error():
@@ -86,7 +86,7 @@ def test_results_handler_server_error():
     assert results.started < results.finished
     assert results.username == 'crizcraig'
     assert results.botname == 'forward-agent'
-    assert results.problem_id == 'deepdrive/domain_randomization'
+    assert results.problem == 'deepdrive/domain_randomization'
 
 
 def test_results_handler_not_confirmed():

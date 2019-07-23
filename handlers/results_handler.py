@@ -113,7 +113,7 @@ def process_results(result_payload: Box,
 def add_eval_data_to_results(eval_data: Box, results: Box):
     results.username = eval_data.username
     results.botname = eval_data.botname
-    results.problem_id = eval_data.problem_id
+    results.problem = eval_data.problem_id
     results.started = eval_data.started
     results.league_commit_sha = eval_data.league_commit_sha
     results.source_commit = eval_data.source_commit
