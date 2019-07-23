@@ -25,13 +25,19 @@ def diagnostics(request):
 
 
 def results(request):
-    ret = handle_results_request(request).to_dict()
-    return ret
+    body, error = handle_results_request(request)
+    resp = Response(json=body.to_dict())
+    if error:
+        resp.status_code = error.http_status_code
+    return resp
 
 
 def confirm(request):
-    ret = handle_confirm_request(request).to_dict()
-    return ret
+    body, error = handle_confirm_request(request)
+    resp = Response(json=body.to_dict())
+    if error:
+        resp.status_code = error.http_status_code
+    return resp
 
 
 def root(request):

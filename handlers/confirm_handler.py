@@ -4,6 +4,7 @@ from box import Box
 
 import constants
 from models.eval_data import get_eval_data, save_eval_data
+from responses.error import Error
 
 
 def handle_confirm_request(request):
@@ -18,10 +19,8 @@ def handle_confirm_request(request):
     if error.msg:
         request.response.status = error.http_status_code
         resp.error = error
-    else:
-        request.response.status = 200
 
-    return resp
+    return resp, error
 
 
 def process_confirm(result_payload: Box, kv: SimpleKeyValueStore):
@@ -30,7 +29,7 @@ def process_confirm(result_payload: Box, kv: SimpleKeyValueStore):
     error = Box(default_box=True)
     if not eval_key:
         error.http_status_code = 400
-        error.msg = 'eval_key must be in JSON data payload'
+        error.message = 'eval_key must be in JSON data payload'
     else:
         eval_data = get_eval_data(eval_key, kv)
         if not eval_data:
