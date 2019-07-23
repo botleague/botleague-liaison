@@ -265,7 +265,7 @@ def process_changed_bot(
         base_repo, botname_dirs, changed_filenames,
         changed_files, head_repo, pull_request,
         user_dirs, changed_filetypes, from_mock,
-        github_client:github.Github) -> \
+        github_client: github.Github) -> \
         Tuple[Union[PrResponse, List[PrResponse]], bool]:
     should_gen = False
     user_dirs = list(user_dirs)
