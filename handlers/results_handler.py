@@ -118,3 +118,4 @@ def add_eval_data_to_results(eval_data: Box, results: Box):
     results.league_commit_sha = eval_data.league_commit_sha
     results.source_commit = eval_data.source_commit
     results.seed = eval_data.seed
+    results.utc_timestamp = time.time()
