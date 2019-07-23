@@ -9,9 +9,11 @@ from box import Box
 
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
-from botleague_helpers.key_value_store import SimpleKeyValueStore
-from responses.pr_responses import ErrorPrResponse, StartedPrResponse, RegenPrResponse, \
-    IgnorePrResponse, PrResponse, EvalStartedPrResponse, EvalErrorPrResponse
+from botleague_helpers.key_value_store import SimpleKeyValueStore, \
+    get_key_value_store
+from responses.pr_responses import ErrorPrResponse, StartedPrResponse, \
+    RegenPrResponse, IgnorePrResponse, PrResponse, EvalStartedPrResponse, \
+    EvalErrorPrResponse
 import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
@@ -32,7 +34,9 @@ class PrProcessorBase:
         super().__init__(*args, **kwargs)  # Support multiple inheritance
         self.is_mock = isinstance(self, Mockable)
 
-    def process_changes(self) -> Tuple[Union[PrResponse, List[PrResponse]], str]:
+    def process_changes(self) -> \
+            Tuple[Union[PrResponse, List[PrResponse]], str]:
+        kv = get_key_value_store()
         pull_request = self.pr_event.pull_request
         head = pull_request.head
         head_repo_name = head.repo.full_name
