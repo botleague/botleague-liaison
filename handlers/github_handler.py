@@ -66,7 +66,9 @@ class PayloadView(object):
             pr_processor.pr_event = Box(self.payload)
             pr_processor.process_changes()
 
-        # do busy work...
+        # Responses are sent via creating statuses on the pull request:
+        #   c.f. create_status
+
         return 'nothing to pull request payload'  # or simple {}
 
     @view_config(header='X-Github-Event:ping')
