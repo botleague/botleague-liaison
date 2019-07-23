@@ -6,7 +6,7 @@ from botleague_helpers.config import get_test_name_from_callstack, blconfig
 from botleague_helpers.key_value_store import get_key_value_store, \
     SimpleKeyValueStore
 from box import Box
-from github import Github
+from github import Github, PullRequestMergeStatus, GithubException
 import github.Gist
 
 from bot_eval import get_eval_db_key
@@ -14,6 +14,7 @@ import constants
 from models.eval_data import get_eval_data, save_eval_data
 import logging as log
 
+from responses.error import Error
 from utils import trigger_leaderboard_generation
 
 log.basicConfig(level=log.INFO)
@@ -26,18 +27,36 @@ def handle_results_request(request):
     data = Box(request.json)
     kv = get_key_value_store()
     error, results, eval_data = process_results(data, kv)
-
-    gist = post_results_to_gist(kv, results)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     save_eval_data(eval_data, kv)
-    trigger_leaderboard_generation()
-    if error.msg:
-        request.response.status = error.http_status_code
-        results.error = error
-    else:
-        request.response.status = 200
 
-    return results
+    if not error:
+        error = merge_pull_request(eval_data.pull_request)
+
+    if error:
+        results.error = error
+
+    return results, error
+
+
+def merge_pull_request(pull_request: Box) -> Error:
+    error = Error()
+    if blconfig.is_test or get_test_name_from_callstack():
+        log.info('Skipping pr merge in test')
+    else:
+        github_client = Github(blconfig.github_token)
+        repo = github_client.get_repo(pull_request.base_full_name)
+        pr = repo.get_pull(pull_request.number)
+        try:
+            merge_status = pr.merge('Automatically merged by Botleague')
+            if not merge_status.merged:
+                error.message = merge_status.message
+                error.http_status_code = 400
+        except GithubException as e:
+            error.message = str(e)
+            error.http_status_code = e.status
+
+    return error
 
 
 def post_results_to_gist(kv, results) -> Optional[github.Gist.Gist]:
