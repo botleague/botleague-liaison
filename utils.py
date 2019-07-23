@@ -91,6 +91,6 @@ def generate_rand_alphanumeric(num_chars):
     return ret
 
 
-def trigger_leaderboard_generation():
-    SimpleKeyValueStore().set(blconfig.should_gen_key, True)
+def trigger_leaderboard_generation(kv: SimpleKeyValueStore):
+    kv.set(blconfig.should_gen_key, True)
 

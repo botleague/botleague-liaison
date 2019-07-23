@@ -62,7 +62,7 @@ class PrProcessorBase:
             base_dirs, botname_dirs, changed_filenames, changed_filetypes,
             self.changed_files, err, pull_request, should_gen, user_org_dirs)
         if should_gen:
-            trigger_leaderboard_generation()
+            trigger_leaderboard_generation(kv)
 
         status = self.create_status(resp, commit_sha, self.github_client,
                                     base_repo_name)
