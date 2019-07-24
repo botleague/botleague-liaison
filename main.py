@@ -16,7 +16,7 @@ from handlers.results_handler import handle_results_request
 
 
 # TODO(Challenges): Allow private docker and github repos that grant access to
-#  special botleague user
+#  special botleague user. Related: https://docs.google.com/document/d/1IOMMtfEVaPWFPg8pEqPOPbLO__bs9_SCmA8_GbfGBTU/edit#
 
 def diagnostics(request):
     tok = blconfig.github_token
