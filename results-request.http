@@ -1,0 +1,48 @@
+# For a quick start check out our HTTP Requests collection (Tools|HTTP Client|Open HTTP Requests Collection).
+#
+# Following HTTP Request Live Templates are available:
+# * 'gtrp' and 'gtr' create a GET request with or without query parameters;
+# * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
+# * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
+
+### Send POST request with json body
+POST http://localhost:8888/results
+Content-Type: application/json
+
+{
+  "eval_key": "YOUWISH...;)JKITWOULDN'TBETHATBIGOFADEAL",
+  "results": {
+    "score": 20.420675441423352,
+    "gist": "not uploaded",
+    "sensorimotor_specific": {
+      "num_episodes": 1,
+      "median_fps": 4.540732574354044,
+      "num_steps": 101,
+      "total_episode_seconds": 12.625
+    },
+    "driving_specific": {
+      "max_gforce": 0.6849351667915033,
+      "uncomfortable_gforce_seconds": 9.625,
+      "jarring_gforce_seconds": 3.25,
+      "harmful_gforces": false,
+      "max_kph": 43.7980693359375,
+      "trip_speed_kph": 32.55125123762376,
+      "collided_with_actor": false,
+      "collided_with_non_actor": false,
+      "closest_vehicle_meters": Infinity,
+      "closest_vehicle_meters_while_at_least_4kph": Infinity,
+      "max_lane_deviation_meters": 3.180977783203125
+    },
+    "problem_specific": {
+      "summary": "https://storage.googleapis.com/deepdriveio/artifacts/2019-07-25__03-00-27PM_5c52/csvs/2019-07-25__03-00-27PM_r0_summary.csv",
+      "episodes": "https://storage.googleapis.com/deepdriveio/artifacts/2019-07-25__03-00-27PM_5c52/csvs/2019-07-25__03-00-27PM_r1_episodes.csv",
+      "hdf5_observations": [
+        "https://storage.googleapis.com/deepdriveio/artifacts/2019-07-25__03-00-27PM_5c52/hdf5/0000000000.hdf5"
+      ]
+    },
+    "youtube": "https://www.youtube.com/watch?v=YgiHsOLeTDo",
+    "mp4": "https://storage.googleapis.com/deepdriveio/artifacts/2019-07-25__03-00-27PM_5c52/mp4/deepdrive_2019-07-25__03-00-27PM.mp4"
+  }
+}
+
+###
