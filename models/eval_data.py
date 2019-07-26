@@ -1,7 +1,5 @@
+from botleague_helpers.key_value_store import SimpleKeyValueStore
 from box import Box
-from leaderboard_generator.botleague_gcp.key_value_store import \
-    SimpleKeyValueStore
-
 from bot_eval import get_eval_db_key
 
 
