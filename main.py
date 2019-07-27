@@ -3,6 +3,7 @@ from __future__ import print_function
 from wsgiref.simple_server import make_server
 
 from botleague_helpers.config import blconfig
+from box import Box
 
 from handlers.confirm_handler import handle_confirm_request
 
@@ -27,15 +28,16 @@ def diagnostics(request):
         return Response('Not token found')
 
 
-def results(request):
-    body, error = handle_results_request(request)
-    resp = Response(json=body.to_dict())
+def handle_results(request):
+    final_results, error, gist = handle_results_request(request)
+    resp = Box(results=final_results, error=error, gist=gist)
+    resp = Response(json=resp.to_dict())
     if error:
         resp.status_code = error.http_status_code
     return resp
 
 
-def confirm(request):
+def handle_confirm(request):
     body, error = handle_confirm_request(request)
     resp = Response(json=body.to_dict())
     if error:
@@ -43,11 +45,11 @@ def confirm(request):
     return resp
 
 
-def root(request):
+def handle_root(request):
     return Response('Botleague liaison service<br>https://github.com/botleague/botleague-liaison<br>https://drive.google.com/file/d/1Zqa9ykc4w6yrOVSdmQCPkxUMbUPjQQRg/view')
 
 
-def adhoc():
+def handle_adhoc():
     repo_name = 'botleague/botleague'
     commit_sha = 'ff075f40afe1e2545ee6cb8e029dc78c83b9f740'
 
@@ -73,16 +75,16 @@ def adhoc():
 with Configurator() as config:
 
     config.add_route(name='root', pattern='/')
-    config.add_view(view=root, route_name='root')
+    config.add_view(view=handle_root, route_name='root')
 
     config.add_route(name='diagnostics', pattern='/diagnostics')
     config.add_view(view=diagnostics, route_name='diagnostics')
 
     config.add_route(name='confirm', pattern='/confirm')
-    config.add_view(view=confirm, route_name='confirm', renderer='json')
+    config.add_view(view=handle_confirm, route_name='confirm', renderer='json')
 
     config.add_route(name='results', pattern='/results')
-    config.add_view(view=results, route_name='results', renderer='json')
+    config.add_view(view=handle_results, route_name='results', renderer='json')
 
     """
     ##### 2. Send `/confirm` POST
