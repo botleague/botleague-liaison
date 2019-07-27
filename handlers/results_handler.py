@@ -20,13 +20,13 @@ from utils import trigger_leaderboard_generation
 log.basicConfig(level=log.INFO)
 
 
-def handle_results_request(request):
+def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     """
     Handles results POSTS from problem evaluators at the end of evaluation
     """
     data = Box(request.json)
     kv = get_key_value_store()
-    error, results, eval_data = process_results(data, kv)
+    error, results, eval_data, gist = process_results(data, kv)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     save_eval_data(eval_data, kv)
 
@@ -36,7 +36,7 @@ def handle_results_request(request):
     if error:
         results.error = error
 
-    return results, error
+    return results, error, gist
 
 
 def merge_pull_request(pull_request: Box) -> Error:
@@ -75,12 +75,14 @@ def post_results_to_gist(kv, results) -> Optional[github.Gist.Gist]:
 
 
 def process_results(result_payload: Box,
-                    kv: SimpleKeyValueStore) -> Tuple[Error, Box, Box]:
+                    kv: SimpleKeyValueStore) -> Tuple[Error, Box, Box,
+                                                      Optional[str]]:
     eval_key = result_payload.get('eval_key', '')
     results = result_payload.get('results', Box())
     results.finished = time.time()
     error = Error()
     eval_data = Box()
+    gist = None
     if not eval_key:
         error.http_status_code = 400
         error.message = 'eval_key must be in JSON data payload'
@@ -103,13 +105,14 @@ def process_results(result_payload: Box,
                 error.http_status_code = 400
                 error.message = 'No "results" found in request'
             add_eval_data_to_results(eval_data, results)
-            post_results_to_gist(kv, results)
+            gist = post_results_to_gist(kv, results)
+            gist = gist.html_url if gist else None
             trigger_leaderboard_generation(kv)
         else:
             error.http_status_code = 400
             error.message = 'Eval data status unknown %s' % eval_data.status
 
-    return error, results, eval_data
+    return error, results, eval_data, gist
 
 
 def add_eval_data_to_results(eval_data: Box, results: Box):
