@@ -14,6 +14,7 @@ import github
 from github import Github
 
 from handlers.results_handler import handle_results_request
+from handlers import github_handler
 
 
 # TODO(Challenges): Allow private docker and github repos that grant access to
@@ -102,7 +103,7 @@ with Configurator() as config:
     config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation
 
-    config.scan()
+    config.scan(github_handler)
     app = config.make_wsgi_app()
 
 
