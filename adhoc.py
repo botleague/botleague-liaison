@@ -1,2 +1,2 @@
 import main
-main.adhoc()
+main.handle_adhoc()
