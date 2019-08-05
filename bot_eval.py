@@ -1,3 +1,4 @@
+import os
 import random
 import time
 from typing import List, Union, Tuple
@@ -13,7 +14,7 @@ from github import Repository
 from responses.pr_responses import ErrorPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
 from tests.mockable import Mockable
-from utils import read_file, get_str_or_box
+from utils import read_file, get_str_or_box, get_botleague_kv_store
 
 from utils import generate_rand_alphanumeric
 
@@ -203,7 +204,7 @@ class BotEval(BotEvalBase):
                     % (endpoint, endpoint_resp.status_code,
                        endpoint_resp.content))
             else:
-                kv = get_key_value_store()
+                kv = get_botleague_kv_store()
                 db_key = get_eval_db_key(eval_data.eval_key)
                 kv.set(db_key, eval_data)
                 ret = EvalStartedPrResponse('Started evaluation at %s' %

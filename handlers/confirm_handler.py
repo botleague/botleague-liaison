@@ -5,6 +5,7 @@ from box import Box
 import constants
 from models.eval_data import get_eval_data, save_eval_data
 from responses.error import Error
+from utils import get_botleague_kv_store
 
 
 def handle_confirm_request(request):
@@ -13,7 +14,7 @@ def handle_confirm_request(request):
     requests originated from the expected domain, e.g. liaison.botleague.io
     """
     data = Box(request.json)
-    kv = get_key_value_store()
+    kv = get_botleague_kv_store()
     error, resp = process_confirm(data, kv)
 
     if error:

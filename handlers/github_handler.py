@@ -1,11 +1,11 @@
 from box import Box
-from leaderboard_generator.botleague_gcp.key_value_store import \
-    get_key_value_store
 from pyramid.view import view_config, view_defaults
 from handlers.pr_handler import get_pr_processor
 from pyramid import httpexceptions
 
 from botleague_helpers.config import blconfig
+
+from utils import get_botleague_kv_store
 
 
 @view_defaults(
@@ -31,7 +31,7 @@ class PayloadView(object):
             raise httpexceptions.HTTPForbidden('No X-Hub-Signature found')
         import hmac
         import hashlib
-        kv = get_key_value_store()
+        kv = get_botleague_kv_store()
         shared_secret = kv.get('BL_GITHUB_WEBOOK_SECRET')
         shared_secret = bytes(shared_secret, 'utf-8')
         hmac_gen = hmac.new(shared_secret, digestmod=hashlib.sha1)
