@@ -146,7 +146,8 @@ class BotEvalBase:
         head_full_name = self.pr_event.head.repo.full_name
         base_full_name = self.pr_event.base.repo.full_name
         now = time.time()
-        eval_data = Box(eval_key=eval_key,
+        eval_data = Box(docker_tag=bot_def.docker_tag,
+                        eval_key=eval_key,
                         eval_id=eval_id,
                         seed=self.seed,
                         problem_id=problem_id,
