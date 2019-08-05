@@ -192,7 +192,11 @@ class BotEval(BotEvalBase):
     @staticmethod
     def request_eval(endpoint: str, eval_data: Box) -> PrResponse:
         try:
-            endpoint_resp = requests.post(endpoint, json=eval_data.to_json(),
+            if 'REPLACE_PROBLEM_HOST' in os.environ:
+                endpoint = 'http://localhost:8080' + \
+                           endpoint[endpoint.find('/eval'):]
+
+            endpoint_resp = requests.post(endpoint, json=eval_data.to_dict(),
                                           timeout=10)
         except requests.exceptions.Timeout:
             ret = EvalErrorPrResponse(
