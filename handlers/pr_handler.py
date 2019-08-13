@@ -9,8 +9,7 @@ from box import Box
 
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
-from botleague_helpers.key_value_store import SimpleKeyValueStore, \
-    get_key_value_store
+from botleague_helpers.db import DB, get_db
 from responses.pr_responses import ErrorPrResponse, StartedPrResponse, \
     RegenPrResponse, IgnorePrResponse, PrResponse, EvalStartedPrResponse, \
     EvalErrorPrResponse
@@ -36,7 +35,7 @@ class PrProcessorBase:
 
     def process_changes(self) -> \
             Tuple[Union[PrResponse, List[PrResponse]], str]:
-        kv = get_key_value_store()
+        kv = get_db()
         pull_request = self.pr_event.pull_request
         head = pull_request.head
         head_repo_name = head.repo.full_name

@@ -1,5 +1,4 @@
-from botleague_helpers.key_value_store import get_key_value_store, \
-    SimpleKeyValueStore
+from botleague_helpers.db import get_db, DB
 from box import Box
 
 import constants
@@ -23,7 +22,7 @@ def handle_confirm_request(request):
     return resp, error
 
 
-def process_confirm(result_payload: Box, kv: SimpleKeyValueStore):
+def process_confirm(result_payload: Box, kv: DB):
     eval_key = result_payload.get('eval_key', '')
     resp = Box(confirmed=False)
     error = Error()

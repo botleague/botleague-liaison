@@ -3,8 +3,7 @@ import os
 import os.path as p
 
 from botleague_helpers.config import blconfig
-from botleague_helpers.key_value_store import SimpleKeyValueStore, \
-    get_key_value_store
+from botleague_helpers.db import DB, get_db
 from box import Box
 
 import constants as c
@@ -92,11 +91,11 @@ def generate_rand_alphanumeric(num_chars):
     return ret
 
 
-def trigger_leaderboard_generation(kv: SimpleKeyValueStore):
+def trigger_leaderboard_generation(kv: DB):
     kv.set(blconfig.should_gen_key, True)
 
 
 def get_botleague_kv_store():
-    ret = get_key_value_store(collection_name='botleague_liaison')
+    ret = get_db(collection_name='botleague_liaison')
     return ret
 

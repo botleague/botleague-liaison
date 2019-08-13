@@ -3,8 +3,7 @@ from typing import Tuple, Optional
 
 import github
 from botleague_helpers.config import get_test_name_from_callstack, blconfig
-from botleague_helpers.key_value_store import get_key_value_store, \
-    SimpleKeyValueStore
+from botleague_helpers.db import get_db, DB
 from box import Box
 from github import Github, PullRequestMergeStatus, GithubException
 import github.Gist
@@ -25,7 +24,7 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     Handles results POSTS from problem evaluators at the end of evaluation
     """
     data = Box(request.json)
-    kv = get_key_value_store()
+    kv = get_db()
     error, results, eval_data, gist = process_results(data, kv)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     save_eval_data(eval_data, kv)
@@ -75,8 +74,7 @@ def post_results_to_gist(kv, results) -> Optional[github.Gist.Gist]:
 
 
 def process_results(result_payload: Box,
-                    kv: SimpleKeyValueStore) -> Tuple[Error, Box, Box,
-                                                      Optional[str]]:
+                    kv: DB) -> Tuple[Error, Box, Box, Optional[str]]:
     eval_key = result_payload.get('eval_key', '')
     results = result_payload.get('results', Box())
     results.finished = time.time()

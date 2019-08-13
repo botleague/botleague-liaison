@@ -9,7 +9,6 @@ import constants
 import github
 import requests
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
-from botleague_helpers.key_value_store import get_key_value_store
 from github import Repository
 from responses.pr_responses import ErrorPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
