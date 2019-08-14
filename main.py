@@ -72,7 +72,7 @@ def handle_adhoc():
     #     print(repo.name)
 
 
-# `app` needs to be global to work with App Engine
+# `app` needs to be global to work in App Engine
 with Configurator() as config:
 
     config.add_route(name='root', pattern='/')
@@ -86,19 +86,6 @@ with Configurator() as config:
 
     config.add_route(name='results', pattern='/results')
     config.add_view(view=handle_results, route_name='results', renderer='json')
-
-    """
-    ##### 2. Send `/confirm` POST
-    
-    Problem evaluators must then send a confirmation request with the `eval-key` to `https://liaison.botleague.io/confirm` to verify that botleague indeed initiated the evaluation. If we do not respond with a 200, you
-    should abort the evaluation.
-    """
-
-    """
-    ##### 3. Send `results.json` POST
-    
-    Finally evaluators POST `results.json` to `https://liaison.botleague.io/results` with the `eval-key` to complete the evaluation and to be included on the Bot League leaderboards. An example `results.json` can be found [here](problems/examples/results.json).
-    """
 
     config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation

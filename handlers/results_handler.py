@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 
 import github
 from botleague_helpers.config import get_test_name_from_callstack, blconfig
-from botleague_helpers.db import get_db, DB
+from botleague_helpers.db import DB
 from box import Box
 from github import Github, PullRequestMergeStatus, GithubException
 import github.Gist
@@ -14,7 +14,7 @@ from models.eval_data import get_eval_data, save_eval_data
 import logging as log
 
 from responses.error import Error
-from utils import trigger_leaderboard_generation
+from utils import trigger_leaderboard_generation, get_botleague_db_store
 
 log.basicConfig(level=log.INFO)
 
@@ -24,10 +24,10 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     Handles results POSTS from problem evaluators at the end of evaluation
     """
     data = Box(request.json)
-    kv = get_db()
-    error, results, eval_data, gist = process_results(data, kv)
+    db = get_botleague_db_store()
+    error, results, eval_data, gist = process_results(data, db)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
-    save_eval_data(eval_data, kv)
+    save_eval_data(eval_data, db)
 
     if not error:
         error = merge_pull_request(eval_data.pull_request)
@@ -58,13 +58,13 @@ def merge_pull_request(pull_request: Box) -> Error:
     return error
 
 
-def post_results_to_gist(kv, results) -> Optional[github.Gist.Gist]:
+def post_results_to_gist(db, results) -> Optional[github.Gist.Gist]:
     if blconfig.is_test or get_test_name_from_callstack():
         log.info('DETECTED TEST MODE: Not uploading results.')
         ret = None
     else:
         github_client = Github(
-            kv.get(constants.BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME))
+            db.get(constants.BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME))
         ret = github_client.get_user().create_gist(
             public=True,
             files={'results.json': github.InputFileContent(
@@ -74,7 +74,7 @@ def post_results_to_gist(kv, results) -> Optional[github.Gist.Gist]:
 
 
 def process_results(result_payload: Box,
-                    kv: DB) -> Tuple[Error, Box, Box, Optional[str]]:
+                    db: DB) -> Tuple[Error, Box, Box, Optional[str]]:
     eval_key = result_payload.get('eval_key', '')
     results = result_payload.get('results', Box())
     results.finished = time.time()
@@ -85,7 +85,7 @@ def process_results(result_payload: Box,
         error.http_status_code = 400
         error.message = 'eval_key must be in JSON data payload'
     else:
-        eval_data = get_eval_data(eval_key, kv)
+        eval_data = get_eval_data(eval_key, db)
         if not eval_data:
             error.http_status_code = 400
             error.message = 'Could not find evaluation with that key'
@@ -103,9 +103,9 @@ def process_results(result_payload: Box,
                 error.http_status_code = 400
                 error.message = 'No "results" found in request'
             add_eval_data_to_results(eval_data, results)
-            gist = post_results_to_gist(kv, results)
+            gist = post_results_to_gist(db, results)
             gist = gist.html_url if gist else None
-            trigger_leaderboard_generation(kv)
+            trigger_leaderboard_generation(db)
         else:
             error.http_status_code = 400
             error.message = 'Eval data status unknown %s' % eval_data.status

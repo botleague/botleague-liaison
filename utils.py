@@ -91,11 +91,11 @@ def generate_rand_alphanumeric(num_chars):
     return ret
 
 
-def trigger_leaderboard_generation(kv: DB):
-    kv.set(blconfig.should_gen_key, True)
+def trigger_leaderboard_generation(db: DB):
+    db.set(blconfig.should_gen_key, True)
 
 
-def get_botleague_kv_store():
+def get_botleague_db_store():
     ret = get_db(collection_name='botleague_liaison')
     return ret
 

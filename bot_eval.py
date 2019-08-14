@@ -13,7 +13,7 @@ from github import Repository
 from responses.pr_responses import ErrorPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
 from tests.mockable import Mockable
-from utils import read_file, get_str_or_box, get_botleague_kv_store
+from utils import read_file, get_str_or_box, get_botleague_db_store
 
 from utils import generate_rand_alphanumeric
 
@@ -122,11 +122,15 @@ class BotEvalBase:
                 responses.append(resp)
         return responses
 
-    def trigger_single_eval(self, bot_def, problem_def, problem_id) -> PrResponse:
+    def trigger_single_eval(self, bot_def, problem_def,
+                            problem_id) -> PrResponse:
         endpoint = problem_def.endpoint
         eval_key = generate_rand_alphanumeric(25)
         eval_id = generate_rand_alphanumeric(25)
-        eval_data = self.get_eval_data(eval_id, eval_key, problem_id, bot_def)
+        eval_data = self.get_eval_data(eval_id, eval_key, problem_id, bot_def,
+                                       problem_def)
+        db = get_botleague_db_store()
+        db.set(get_eval_db_key(eval_data.eval_key), eval_data)
         resp = self.request_eval(endpoint, eval_data)
         return resp
 
@@ -134,7 +138,8 @@ class BotEvalBase:
     def request_eval(endpoint, eval_data) -> PrResponse:
         raise NotImplementedError()
 
-    def get_eval_data(self, eval_id, eval_key, problem_id, bot_def) -> Box:
+    def get_eval_data(self, eval_id, eval_key, problem_id, bot_def,
+                      problem_def) -> Box:
         # TODO: Move this to models/eval_data
         pull_number = self.pr_event.number
         pull_url = self.pr_event.url
@@ -150,6 +155,7 @@ class BotEvalBase:
                         eval_id=eval_id,
                         seed=self.seed,
                         problem_id=problem_id,
+                        problem_def=problem_def,
                         botname=self.botname,
                         username=self.user_or_org_dir,
                         status=constants.EVAL_STATUS_STARTED,
@@ -192,7 +198,7 @@ class BotEval(BotEvalBase):
     def request_eval(endpoint: str, eval_data: Box) -> PrResponse:
         try:
             if 'REPLACE_PROBLEM_HOST' in os.environ:
-                endpoint = 'http://localhost:8080' + \
+                endpoint = 'http://localhost:8000' + \
                            endpoint[endpoint.find('/eval'):]
 
             endpoint_resp = requests.post(endpoint, json=eval_data.to_dict(),
@@ -208,9 +214,6 @@ class BotEval(BotEvalBase):
                     % (endpoint, endpoint_resp.status_code,
                        endpoint_resp.content))
             else:
-                kv = get_botleague_kv_store()
-                db_key = get_eval_db_key(eval_data.eval_key)
-                kv.set(db_key, eval_data)
                 ret = EvalStartedPrResponse('Started evaluation at %s' %
                                             endpoint, eval_data)
                 # Now wait for a /confirm and /results request with the eval_key
@@ -272,7 +275,7 @@ def process_changed_bot(
         user_dirs, changed_filetypes, from_mock,
         github_client: github.Github) -> \
         Tuple[Union[PrResponse, List[PrResponse]], bool]:
-    should_gen = False
+    should_gen_leaderboard = False
     user_dirs = list(user_dirs)
     if len(user_dirs) > 1:
         resp = ErrorPrResponse(
@@ -284,7 +287,7 @@ def process_changed_bot(
         botname = botname_dirs[0]
         if ['md'] == list(changed_filetypes):
             # Just a docs/readme change. Trigger leaderboard gen.
-            should_gen = True
+            should_gen_leaderboard = True
             resp = RegenPrResponse('Markdown only change detected, '
                                    'regenerating leaderboards')
         else:
@@ -298,6 +301,6 @@ def process_changed_bot(
                 pull_request=pull_request,
                 github_client=github_client)
             resp = evaluator.eval()
-    return resp, should_gen
+    return resp, should_gen_leaderboard
 
 

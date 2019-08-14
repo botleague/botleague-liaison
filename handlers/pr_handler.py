@@ -9,14 +9,14 @@ from box import Box
 
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
-from botleague_helpers.db import DB, get_db
 from responses.pr_responses import ErrorPrResponse, StartedPrResponse, \
     RegenPrResponse, IgnorePrResponse, PrResponse, EvalStartedPrResponse, \
     EvalErrorPrResponse
 import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
-from utils import read_json, trigger_leaderboard_generation
+from utils import read_json, trigger_leaderboard_generation, \
+    get_botleague_db_store
 
 log.basicConfig(level=log.INFO)
 
@@ -35,7 +35,7 @@ class PrProcessorBase:
 
     def process_changes(self) -> \
             Tuple[Union[PrResponse, List[PrResponse]], str]:
-        kv = get_db()
+        db = get_botleague_db_store()
         pull_request = self.pr_event.pull_request
         head = pull_request.head
         head_repo_name = head.repo.full_name
@@ -61,7 +61,7 @@ class PrProcessorBase:
             base_dirs, botname_dirs, changed_filenames, changed_filetypes,
             self.changed_files, err, pull_request, should_gen, user_org_dirs)
         if should_gen:
-            trigger_leaderboard_generation(kv)
+            trigger_leaderboard_generation(db)
 
         status = self.create_status(resp, commit_sha, self.github_client,
                                     base_repo_name)

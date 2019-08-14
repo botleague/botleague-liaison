@@ -15,6 +15,7 @@ from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
 from botleague_helpers.config import activate_test_mode, blconfig
 
 from tests.mockable import Mockable
+from utils import get_botleague_db_store
 
 activate_test_mode()  # So don't import this module from non-test code!
 
@@ -44,12 +45,12 @@ def test_bot_eval_missing_source_commit():
 
 def test_db_invalid_key_handler():
     payload = Mockable.read_test_box('request.json')
-    kv = get_db()
+    db = get_botleague_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
-    kv.set(db_key, eval_data)
+    db.set(db_key, eval_data)
     try:
-        error, results, eval_data, gist = process_results(payload, kv)
+        error, results, eval_data, gist = process_results(payload, db)
     except RuntimeError as e:
         assert INVALID_DB_KEY_STATE_MESSAGE == str(e)
     else:
@@ -58,11 +59,11 @@ def test_db_invalid_key_handler():
 
 def test_results_handler():
     payload = Mockable.read_test_box('results_success.json')
-    kv = get_db()
+    db = get_botleague_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
-    kv.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, kv)
+    db.set(db_key, eval_data)
+    error, results, eval_data, gist = process_results(payload, db)
     assert not error
     assert 'finished' in results
     assert 'started' in results
@@ -74,11 +75,11 @@ def test_results_handler():
 
 def test_results_handler_server_error():
     payload = Mockable.read_test_box('results_error.json')
-    kv = get_db()
+    db = get_botleague_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
-    kv.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, kv)
+    db.set(db_key, eval_data)
+    error, results, eval_data, gist = process_results(payload, db)
     assert error
     assert error.http_status_code == 500
     assert 'finished' in results
@@ -91,11 +92,11 @@ def test_results_handler_server_error():
 
 def test_results_handler_not_confirmed():
     payload = Mockable.read_test_box('results_success.json')
-    kv = get_db()
+    db = get_botleague_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
-    kv.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, kv)
+    db.set(db_key, eval_data)
+    error, results, eval_data, gist = process_results(payload, db)
     assert error
     assert error.http_status_code == 400
     assert 'finished' in results
@@ -103,11 +104,11 @@ def test_results_handler_not_confirmed():
 
 def test_results_handler_already_complete():
     payload = Mockable.read_test_box('results_success.json')
-    kv = get_db()
+    db = get_botleague_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
-    kv.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, kv)
+    db.set(db_key, eval_data)
+    error, results, eval_data, gist = process_results(payload, db)
     assert error
     assert error.http_status_code == 400
     assert 'finished' in results
@@ -115,12 +116,12 @@ def test_results_handler_already_complete():
 
 def test_confirm_handler():
     payload = Mockable.read_test_box('request.json')
-    kv = get_db()
+    db = get_botleague_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
-    kv.set(db_key, eval_data)
-    error, resp = process_confirm(payload, kv)
-    eval_data = get_eval_data(payload.eval_key, kv)
+    db.set(db_key, eval_data)
+    error, resp = process_confirm(payload, db)
+    eval_data = get_eval_data(payload.eval_key, db)
     assert not error
     assert resp.confirmed
     assert eval_data.status == constants.EVAL_STATUS_CONFIRMED
@@ -128,7 +129,7 @@ def test_confirm_handler():
 
 def bot_eval_helper():
     """
-     Uses test method name to set data dir
+     Uses test method name for DATA directory in tests/data/<name>
     """
     pr_processor = PrProcessorMock()
     responses, status = pr_processor.process_changes()

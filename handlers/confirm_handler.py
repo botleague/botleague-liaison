@@ -1,10 +1,10 @@
-from botleague_helpers.db import get_db, DB
+from botleague_helpers.db import DB
 from box import Box
 
 import constants
 from models.eval_data import get_eval_data, save_eval_data
 from responses.error import Error
-from utils import get_botleague_kv_store
+from utils import get_botleague_db_store
 
 
 def handle_confirm_request(request):
@@ -13,8 +13,8 @@ def handle_confirm_request(request):
     requests originated from the expected domain, e.g. liaison.botleague.io
     """
     data = Box(request.json)
-    kv = get_botleague_kv_store()
-    error, resp = process_confirm(data, kv)
+    db = get_botleague_db_store()
+    error, resp = process_confirm(data, db)
 
     if error:
         resp.error = error
@@ -22,7 +22,7 @@ def handle_confirm_request(request):
     return resp, error
 
 
-def process_confirm(result_payload: Box, kv: DB):
+def process_confirm(result_payload: Box, db: DB):
     eval_key = result_payload.get('eval_key', '')
     resp = Box(confirmed=False)
     error = Error()
@@ -30,7 +30,7 @@ def process_confirm(result_payload: Box, kv: DB):
         error.http_status_code = 400
         error.message = 'eval_key must be in JSON data payload'
     else:
-        eval_data = get_eval_data(eval_key, kv)
+        eval_data = get_eval_data(eval_key, db)
         if not eval_data:
             error.http_status_code = 400
             error.message = 'Could not find evaluation with that key'
@@ -46,7 +46,7 @@ def process_confirm(result_payload: Box, kv: DB):
                 # confirmed!
                 resp.confirmed = True
                 eval_data.status = constants.EVAL_STATUS_CONFIRMED
-                save_eval_data(eval_data, kv)
+                save_eval_data(eval_data, db)
         else:
             error.http_status_code = 400
             error.message = 'Eval data status unknown %s' % eval_data.status
