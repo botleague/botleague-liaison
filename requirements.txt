@@ -5,3 +5,4 @@ google-cloud-firestore==0.32.1
 cryptography==2.6.1
 python-box
 botleague-helpers>=0.0.5
+loguru

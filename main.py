@@ -4,6 +4,7 @@ from wsgiref.simple_server import make_server
 
 from botleague_helpers.config import blconfig
 from box import Box
+from loguru import logger as log
 
 from handlers.confirm_handler import handle_confirm_request
 
@@ -31,10 +32,16 @@ def diagnostics(request):
 
 def handle_results(request):
     final_results, error, gist = handle_results_request(request)
-    resp = Box(results=final_results, error=error, gist=gist)
-    resp = Response(json=resp.to_dict())
+    resp_box = Box(results=final_results, error=error, gist=gist)
+    resp = Response(json=resp_box.to_dict())
     if error:
         resp.status_code = error.http_status_code
+        log_fn = log.error
+    else:
+        log_fn = log.info
+
+    log_fn(f'Results response {resp_box.to_json(indent=2)}')
+
     return resp
 
 
@@ -82,10 +89,12 @@ with Configurator() as config:
     config.add_view(view=diagnostics, route_name='diagnostics')
 
     config.add_route(name='confirm', pattern='/confirm')
-    config.add_view(view=handle_confirm, route_name='confirm', renderer='json')
+    config.add_view(view=handle_confirm, route_name='confirm', renderer='json',
+                    request_method='POST')
 
     config.add_route(name='results', pattern='/results')
-    config.add_view(view=handle_results, route_name='results', renderer='json')
+    config.add_view(view=handle_results, route_name='results', renderer='json',
+                    request_method='POST')
 
     config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation
@@ -95,5 +104,7 @@ with Configurator() as config:
 
 
 if __name__ == "__main__":
+    # TODO: Standardize on Pyramid or Flask with problem-endpoint
     server = make_server("0.0.0.0", 8888, app)
+    log.success('Serving http://0.0.0.0:8888')
     server.serve_forever()

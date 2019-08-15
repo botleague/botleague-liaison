@@ -8,9 +8,9 @@ from botleague_helpers.config import blconfig
 from utils import get_botleague_db_store
 
 
-@view_defaults(
-    route_name='github_payload', renderer='json', request_method='POST'
-)
+@view_defaults(route_name='github_payload',
+               renderer='json',
+               request_method='POST')
 class PayloadView(object):
     """
     View receiving of Github payload. By default, this view it's fired only if
