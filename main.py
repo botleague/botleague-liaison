@@ -116,7 +116,7 @@ if 'GAE_APPLICATION' in os.environ or __name__ == '__main__':
     # Load github token into memory so that requests don't need to do this.
     _tok_ = blconfig.github_token
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # TODO: Standardize on Pyramid or Flask with problem-endpoint
     server = make_server("0.0.0.0", 8888, app)
     log.success('Serving http://0.0.0.0:8888')
