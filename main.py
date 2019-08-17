@@ -27,7 +27,7 @@ def diagnostics(request):
     tok = blconfig.github_token
     if tok:
         return Response('I have a github token of length %r that starts '
-                        'with %s' % (len(tok), tok[:4]))
+                        'with %s' % (len(tok), tok[:3]))
     else:
         return Response('Not token found')
 
@@ -48,15 +48,19 @@ def handle_results(request):
 
 
 def handle_confirm(request):
+    start = time.time()
     body, error = handle_confirm_request(request)
     resp = Response(json=body.to_dict())
     if error:
         resp.status_code = error.http_status_code
+    log.info(f'Confirm response took {time.time() - start} seconds')
     return resp
 
 
 def handle_root(request):
-    return Response('Botleague liaison service<br>https://github.com/botleague/botleague-liaison<br>https://drive.google.com/file/d/1Zqa9ykc4w6yrOVSdmQCPkxUMbUPjQQRg/view')
+    return Response(f'Botleague liaison service<br>'
+                    f'https://github.com/botleague/botleague-liaison<br>'
+                    f'botleague-helpers version: {blconfig.version}')
 
 
 def handle_adhoc():
