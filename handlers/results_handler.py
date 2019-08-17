@@ -10,6 +10,7 @@ import github.Gist
 
 from bot_eval import get_eval_db_key
 import constants
+from handlers.pr_handler import PrProcessor
 from models.eval_data import get_eval_data, save_eval_data
 import logging as log
 
@@ -32,10 +33,34 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     if not error:
         error = merge_pull_request(eval_data.pull_request)
 
+    update_pr_status(error, eval_data, results)
+
     if error:
         results.error = error
 
     return results, error, gist
+
+
+def update_pr_status(error, eval_data, results):
+    if error:
+        results.error = error
+        pr_msg = error
+        pr_status = constants.CI_STATUS_ERROR
+    else:
+        # TODO: Fan in all problem evals and set pending until they are all
+        #   successful
+        pr_msg = 'Evaluation complete'
+        pr_status = constants.CI_STATUS_SUCCESS
+    repo = github.Github(blconfig.github_token).get_repo(
+        eval_data.pull_request.base.repo.full_name)
+    commit = repo.get_commit(sha=eval_data.pull_request.head.sha)
+    # status can be error, failure, pending, or success
+    status = commit.create_status(
+        pr_status,
+        description=pr_msg,
+        target_url='https://botleague.io/users/username/botname/this-evaluation',
+        context='Botleague')
+    return status
 
 
 def merge_pull_request(pull_request: Box) -> Error:
