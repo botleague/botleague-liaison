@@ -99,6 +99,8 @@ class BotEvalBase:
                 return ErrorPrResponse('Bot directory does not match user or '
                                      'org name on source repo, aborting')
         problem_ids = bot_def.problems
+        if len(problem_ids) != len(set(problem_ids)):
+            return ErrorPrResponse('Duplicate problems detected')
         prob_responses = self.eval_bots_problems(problem_ids, bot_def)
         return prob_responses
 
