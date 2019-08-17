@@ -82,7 +82,8 @@ class PrProcessorBase:
             else:
                 raise RuntimeError('Unexpected response type')
         elif isinstance(resp, list):
-            # We've fanned out a number of eval requests 1->N,
+            # We've fanned out a number of eval requests 1->N due to
+            # multiple problems listed in the problem list.
             # Ensure they've all succeeded.
             msg = '\n'.join([r.msg for r in resp])
             if any(isinstance(r, EvalErrorPrResponse) for r in resp):
