@@ -110,7 +110,7 @@ def process_results(result_payload: Box,
             add_eval_data_to_results(eval_data, results)
             gist = post_results_to_gist(db, results)
             gist = gist.html_url if gist else None
-            trigger_leaderboard_generation(db)
+            trigger_leaderboard_generation()
         else:
             error.http_status_code = 400
             error.message = 'Eval data status unknown %s' % eval_data.status
