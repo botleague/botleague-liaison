@@ -33,3 +33,11 @@ Test hooks within https://github.com/botleague/botleague/settings/hooks
 ```
 gcloud app deploy
 ```
+
+Or if you've changed botleague-helpers, in order to pull latest 
+
+```
+gcloud beta app deploy --no-cache
+```
+
+> Note: Change requirements.txt seems to have the same effect.
