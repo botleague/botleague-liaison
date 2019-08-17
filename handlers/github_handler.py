@@ -64,6 +64,7 @@ class PayloadView(object):
         if action in ['opened', 'synchronize', 'reopened']:
             pr_processor = get_pr_processor()
             pr_processor.pr_event = Box(self.payload)
+            log.info(f'Processing pull request event {pr_processor.pr_event}')
             pr_processor.process_changes()
 
         # Responses are sent via creating statuses on the pull request:
