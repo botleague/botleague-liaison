@@ -100,3 +100,6 @@ def get_botleague_db_store():
     ret = get_db(collection_name='botleague_liaison')
     return ret
 
+
+# if __name__ == '__main__':
+#     trigger_leaderboard_generation()
