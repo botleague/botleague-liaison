@@ -19,6 +19,9 @@ from github import Github
 from handlers.results_handler import handle_results_request
 from handlers import github_handler
 
+# TODO: Remove this, just testing app engine pip update behavior
+log.info(f'botleague collection name 'f'"{blconfig.botleague_collection_name}"')
+log.info(f'botleague-helpers VERSION 'f'"{blconfig.version}"')
 
 # TODO(Challenges): Allow private docker and github repos that grant access to
 #  special botleague user. Related: https://docs.google.com/document/d/1IOMMtfEVaPWFPg8pEqPOPbLO__bs9_SCmA8_GbfGBTU/edit#
