@@ -52,14 +52,15 @@ def update_pr_status(error, eval_data, results):
         pr_msg = 'Evaluation complete'
         pr_status = constants.CI_STATUS_SUCCESS
     repo = github.Github(blconfig.github_token).get_repo(
-        eval_data.pull_request.base.repo.full_name)
-    commit = repo.get_commit(sha=eval_data.pull_request.head.sha)
+        eval_data.pull_request.base_full_name)
+    commit = repo.get_commit(sha=eval_data.pull_request.head_commit)
     # status can be error, failure, pending, or success
     status = commit.create_status(
         pr_status,
         description=pr_msg,
         target_url='https://botleague.io/users/username/botname/this-evaluation',
         context='Botleague')
+    log.info(f'Updated PR status {status}')
     return status
 
 
