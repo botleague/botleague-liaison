@@ -8,9 +8,7 @@ from box import Box
 
 import constants as c
 
-import logging as log
-
-log.basicConfig(level=log.INFO)
+from loguru import logger as log
 
 from github import UnknownObjectException
 

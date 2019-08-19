@@ -1,6 +1,6 @@
 from typing import List, Union, Tuple
 
-import logging as log
+from loguru import logger as log
 
 import github.Repository
 import github.Organization

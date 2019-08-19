@@ -12,7 +12,7 @@ from bot_eval import get_eval_db_key
 import constants
 from handlers.pr_handler import PrProcessor
 from models.eval_data import get_eval_data, save_eval_data
-import logging as log
+from loguru import logger as log
 
 from responses.error import Error
 from utils import trigger_leaderboard_generation, get_liaison_db_store
