@@ -28,10 +28,10 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     save_eval_data(eval_data, db)
 
+    update_pr_status(error, eval_data, results)
+
     if not error:
         error = merge_pull_request(eval_data.pull_request)
-
-    update_pr_status(error, eval_data, results)
 
     if error:
         results.error = error
