@@ -8,6 +8,7 @@ from botleague_helpers.config import blconfig
 from box import Box
 from loguru import logger as log
 
+from constants import ON_GAE
 from handlers.confirm_handler import handle_confirm_request
 
 from pyramid.config import Configurator
@@ -19,9 +20,7 @@ from github import Github
 from handlers.results_handler import handle_results_request
 from handlers import github_handler
 
-# TODO: Remove this, just testing app engine pip update behavior
-log.info(f'botleague collection name 'f'"{blconfig.botleague_collection_name}"')
-log.info(f'botleague-helpers VERSION 'f'"{blconfig.version}"')
+
 
 # TODO(Challenges): Allow private docker and github repos that grant access to
 #  special botleague user. Related: https://docs.google.com/document/d/1IOMMtfEVaPWFPg8pEqPOPbLO__bs9_SCmA8_GbfGBTU/edit#
@@ -112,7 +111,7 @@ with Configurator() as config:
     config.scan(github_handler)
     app = config.make_wsgi_app()
 
-if 'GAE_APPLICATION' in os.environ or __name__ == '__main__':
+if ON_GAE or __name__ == '__main__':
     # Load github token into memory so that requests don't need to do this.
     _tok_ = blconfig.github_token
 
