@@ -13,7 +13,7 @@ from github import Repository
 from responses.pr_responses import ErrorPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
 from tests.mockable import Mockable
-from utils import read_file, get_str_or_box, get_botleague_db_store
+from utils import read_file, get_str_or_box, get_liaison_db_store
 
 from utils import generate_rand_alphanumeric
 
@@ -131,7 +131,7 @@ class BotEvalBase:
         eval_id = generate_rand_alphanumeric(25)
         eval_data = self.get_eval_data(eval_id, eval_key, problem_id, bot_def,
                                        problem_def)
-        db = get_botleague_db_store()
+        db = get_liaison_db_store()
         db.set(get_eval_db_key(eval_data.eval_key), eval_data)
         resp = self.request_eval(endpoint, eval_data)
         return resp

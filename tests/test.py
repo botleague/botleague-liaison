@@ -15,7 +15,7 @@ from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
 from botleague_helpers.config import activate_test_mode, blconfig
 
 from tests.mockable import Mockable
-from utils import get_botleague_db_store
+from utils import get_liaison_db_store
 
 activate_test_mode()  # So don't import this module from non-test code!
 
@@ -45,7 +45,7 @@ def test_bot_eval_missing_source_commit():
 
 def test_db_invalid_key_handler():
     payload = Mockable.read_test_box('request.json')
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
@@ -59,7 +59,7 @@ def test_db_invalid_key_handler():
 
 def test_results_handler():
     payload = Mockable.read_test_box('results_success.json')
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
@@ -75,7 +75,7 @@ def test_results_handler():
 
 def test_results_handler_server_error():
     payload = Mockable.read_test_box('results_error.json')
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
@@ -92,7 +92,7 @@ def test_results_handler_server_error():
 
 def test_results_handler_not_confirmed():
     payload = Mockable.read_test_box('results_success.json')
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
@@ -104,7 +104,7 @@ def test_results_handler_not_confirmed():
 
 def test_results_handler_already_complete():
     payload = Mockable.read_test_box('results_success.json')
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
@@ -116,7 +116,7 @@ def test_results_handler_already_complete():
 
 def test_confirm_handler():
     payload = Mockable.read_test_box('request.json')
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)

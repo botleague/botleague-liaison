@@ -15,9 +15,7 @@ from models.eval_data import get_eval_data, save_eval_data
 import logging as log
 
 from responses.error import Error
-from utils import trigger_leaderboard_generation, get_botleague_db_store
-
-log.basicConfig(level=log.INFO)
+from utils import trigger_leaderboard_generation, get_liaison_db_store
 
 
 def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
@@ -25,7 +23,7 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     Handles results POSTS from problem evaluators at the end of evaluation
     """
     data = Box(request.json)
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     error, results, eval_data, gist = process_results(data, db)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     save_eval_data(eval_data, db)

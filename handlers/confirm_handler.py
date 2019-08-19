@@ -4,7 +4,7 @@ from box import Box
 import constants
 from models.eval_data import get_eval_data, save_eval_data
 from responses.error import Error
-from utils import get_botleague_db_store
+from utils import get_liaison_db_store
 
 
 def handle_confirm_request(request):
@@ -13,7 +13,7 @@ def handle_confirm_request(request):
     requests originated from the expected domain, e.g. liaison.botleague.io
     """
     data = Box(request.json)
-    db = get_botleague_db_store()
+    db = get_liaison_db_store()
     error, resp = process_confirm(data, db)
 
     if error:

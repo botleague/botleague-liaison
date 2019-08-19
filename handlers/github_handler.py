@@ -7,7 +7,7 @@ from pyramid import httpexceptions
 
 from botleague_helpers.config import blconfig
 
-from utils import get_botleague_db_store
+from utils import get_liaison_db_store
 
 
 @view_defaults(route_name='github_payload',
@@ -41,7 +41,7 @@ class PayloadView(object):
             raise httpexceptions.HTTPForbidden('No X-Hub-Signature found')
         import hmac
         import hashlib
-        db = get_botleague_db_store()
+        db = get_liaison_db_store()
         shared_secret = db.get('BL_GITHUB_WEBOOK_SECRET')
         shared_secret = bytes(shared_secret, 'utf-8')
         hmac_gen = hmac.new(shared_secret, digestmod=hashlib.sha1)

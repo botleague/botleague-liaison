@@ -16,10 +16,7 @@ import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
 from utils import read_json, trigger_leaderboard_generation, \
-    get_botleague_db_store
-
-log.basicConfig(level=log.INFO)
-
+    get_liaison_db_store
 
 class PrProcessorBase:
     base_repo: github.Repository = None
@@ -35,7 +32,6 @@ class PrProcessorBase:
 
     def process_changes(self) -> \
             Tuple[Union[PrResponse, List[PrResponse]], str]:
-        db = get_botleague_db_store()
         pull_request = self.pr_event.pull_request
         head = pull_request.head
         head_repo_name = head.repo.full_name

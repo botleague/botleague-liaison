@@ -96,7 +96,7 @@ def trigger_leaderboard_generation():
     db.set(blconfig.should_gen_key, True)
 
 
-def get_botleague_db_store():
+def get_liaison_db_store():
     ret = get_db(collection_name='botleague_liaison')
     return ret
 
