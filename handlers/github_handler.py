@@ -1,5 +1,7 @@
 from box import Box
 from pyramid.view import view_config, view_defaults
+
+from constants import ON_GAE
 from handlers.pr_handler import get_pr_processor
 from pyramid import httpexceptions
 
@@ -19,11 +21,19 @@ class PayloadView(object):
 
     def __init__(self, request):
         self.request = request
+        self.check_gae_enabled()
+
         if not blconfig.is_test:
             self.check_hmac()
 
         # Payload from Github, it's a dict
         self.payload = self.request.json
+
+    @staticmethod
+    def check_gae_enabled():
+        db = get_liaison_db_store()
+        if ON_GAE and db.get('DISABLE_GIT_HOOK_CONSUMPTION') is True:
+            raise httpexceptions.HTTPLocked('Git hooks disabled')
 
     def check_hmac(self):
         hmac_sig = self.request.headers.get('X-Hub-Signature')
