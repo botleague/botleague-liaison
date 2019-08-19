@@ -31,7 +31,7 @@ def diagnostics(request):
     tok = blconfig.github_token
     if tok:
         return Response('I have a github token of length %r that starts '
-                        'with %s' % (len(tok), tok[:3]))
+                        'with %s<br>' % (len(tok), tok[:3]))
     else:
         return Response('Not token found')
 
