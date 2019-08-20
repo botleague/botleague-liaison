@@ -200,7 +200,7 @@ class BotEval(BotEvalBase):
     def request_eval(endpoint: str, eval_data: Box) -> PrResponse:
         try:
             if 'REPLACE_PROBLEM_HOST' in os.environ:
-                endpoint = 'http://localhost:8000' + \
+                endpoint = os.environ['REPLACE_PROBLEM_HOST'] + \
                            endpoint[endpoint.find('/eval'):]
 
             endpoint_resp = requests.post(endpoint, json=eval_data.to_dict(),
