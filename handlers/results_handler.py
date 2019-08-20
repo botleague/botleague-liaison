@@ -57,7 +57,7 @@ def update_pr_status(error, eval_data, results):
     status = commit.create_status(
         pr_status,
         description=pr_msg,
-        target_url='https://botleague.io/users/username/botname/this-evaluation',
+        target_url=results.gist,
         context='Botleague')
     log.info(f'Updated PR status {status}')
     return status
