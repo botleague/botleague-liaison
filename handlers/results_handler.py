@@ -29,7 +29,7 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     save_eval_data(eval_data, db)
 
-    update_pr_status(error, eval_data, results)
+    update_pr_status(error, eval_data, results, gist)
 
     if not error:
         error = merge_pull_request(eval_data.pull_request)
@@ -40,7 +40,7 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     return results, error, gist
 
 
-def update_pr_status(error, eval_data, results):
+def update_pr_status(error, eval_data, results, gist):
     if error:
         results.error = error
         pr_msg = error
@@ -57,7 +57,7 @@ def update_pr_status(error, eval_data, results):
     status = commit.create_status(
         pr_status,
         description=pr_msg,
-        target_url=results.gist,
+        target_url=gist,
         context='Botleague')
     log.info(f'Updated PR status {status}')
     return status
