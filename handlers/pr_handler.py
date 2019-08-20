@@ -178,7 +178,7 @@ class PrProcessor(PrProcessorBase):
         status = commit.create_status(
             status,
             description=msg,
-            target_url='https://botleague.io/users/username/botname/this-evaluation',
+            # target_url='https://botleague.io/users/username/botname/this-evaluation',
             context='Botleague')
         return status
 
