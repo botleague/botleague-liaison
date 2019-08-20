@@ -28,16 +28,7 @@ Test hooks within https://github.com/botleague/botleague/settings/hooks
 2. Use the **Recent Deliveries** to replay a hook and debug locally
 
 
-## Deploy
 
-```
-gcloud app deploy
-```
+## Deploy, logs, etc..
 
-Or if you've changed botleague-helpers, in order to pull latest 
-
-```
-gcloud beta app deploy --no-cache
-```
-
-> Note: Change requirements.txt seems to have the same effect.
+See Makefile
