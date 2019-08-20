@@ -23,6 +23,7 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     Handles results POSTS from problem evaluators at the end of evaluation
     """
     data = Box(request.json)
+    log.info(f'Handling results request {data.to_json(indent=2)}')
     db = get_liaison_db_store()
     error, results, eval_data, gist = process_results(data, db)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
