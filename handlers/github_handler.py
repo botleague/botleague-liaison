@@ -82,7 +82,7 @@ class PayloadView(object):
         # Responses are sent via creating statuses on the pull request:
         #   c.f. create_status
 
-        return 'nothing to pull request payload'  # or simple {}
+        return 'Successfully processed pull request'  # or simple {}
 
     @view_config(header='X-Github-Event:ping')
     def payload_push_ping(self):
