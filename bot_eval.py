@@ -222,8 +222,13 @@ class BotEval(BotEvalBase):
         return ret
 
     def user_in_org(self, user, org):
-        public_members = list(self.github_client.get_organization(org)
-                              .get_public_members())
+        try:
+            public_members = list(self.github_client.get_organization(org)
+                                  .get_public_members())
+        except:
+            log.exception(f'Unable to get users for {org}')
+            return False
+
         # TODO: We should also be checking that the user has commit or some higher
         #   level access than just member. i.e. EpicGames members should
         #   not be creating EpicGames problems.
