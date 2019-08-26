@@ -32,3 +32,8 @@ Test hooks within https://github.com/botleague/botleague/settings/hooks
 ## Deploy, logs, etc..
 
 See Makefile
+
+## Disabling git hooks
+
+In case of a fire, you may want to disable initiation of any evals. You can 
+do so by setting `DISABLE_GIT_HOOK_CONSUMPTION=true` in Firestore. 
