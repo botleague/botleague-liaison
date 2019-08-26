@@ -1,4 +1,5 @@
 import time
+from botleague_helpers.crypto import decrypt_symmetric
 from typing import Tuple, Optional
 
 import github
@@ -94,7 +95,8 @@ def post_results_to_gist(db, results) -> Optional[github.Gist.Gist]:
         ret = None
     else:
         github_client = Github(
-            db.get(constants.BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME))
+            decrypt_symmetric(
+                db.get(constants.BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME)))
         ret = github_client.get_user().create_gist(
             public=True,
             files={'results.json': github.InputFileContent(

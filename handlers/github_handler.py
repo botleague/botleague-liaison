@@ -1,3 +1,4 @@
+from botleague_helpers.crypto import decrypt_symmetric
 from box import Box
 from pyramid.view import view_config, view_defaults
 
@@ -43,7 +44,8 @@ class PayloadView(object):
         import hmac
         import hashlib
         db = get_liaison_db_store()
-        shared_secret = db.get('BL_GITHUB_WEBOOK_SECRET')
+        shared_secret = decrypt_symmetric(db.get(
+            'BL_GITHUB_WEBOOK_SECRET_encrypted'))
         shared_secret = bytes(shared_secret, 'utf-8')
         hmac_gen = hmac.new(shared_secret, digestmod=hashlib.sha1)
         hmac_gen.update(self.request.body)
