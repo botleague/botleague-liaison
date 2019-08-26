@@ -2,7 +2,7 @@ import os
 import random
 import time
 from typing import List, Union, Tuple
-
+from loguru import logger as log
 from box import Box, BoxList
 
 import constants
