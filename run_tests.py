@@ -26,8 +26,10 @@ def main():
     test_module = test
     if len(sys.argv) > 1:
         test_case = sys.argv[1]
+        log.info('Running ' + test_case)
         getattr(test_module, test_case)()
         num = 1
+        log.success(f'{test_case} ran successfully!')
     else:
         num = run_all(test_module)
     log.success(f'{num} tests ran successfully!')
