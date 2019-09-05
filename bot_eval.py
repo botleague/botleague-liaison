@@ -112,7 +112,9 @@ class BotEvalBase:
                 constants.PROBLEM_DEFINITION_FILENAME)
 
             # Ensure the problem exists
+            # TODO: Use local repo clone for this instead
             problem_def = self.github_get(self.base_repo, problem_def_url)
+
             if not problem_def:
                 # Problem does not exist
                 responses.append(
