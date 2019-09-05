@@ -1,0 +1,3 @@
+[submodule "botleague"]
+	path = botleague
+	url = https://github.com/botleague/botleague

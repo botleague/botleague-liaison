@@ -1,5 +1,9 @@
+from io import BytesIO
+from os.path import join
 from typing import List, Union, Tuple
 
+from dulwich import porcelain
+from dulwich.repo import Repo
 from loguru import logger as log
 
 import github.Repository
@@ -151,12 +155,20 @@ class PrProcessorBase:
         raise NotImplementedError()
 
 
+def pull_botleague():
+    porcelain.pull(
+        constants.BOTLEAGUE_REPO_ROOT,
+        remote_location='https://github.com/botleague/botleague',
+        refspecs=b'refs/heads/master',)
+
+
 class PrProcessor(PrProcessorBase):
     def __init__(self, pr_event):
         if get_test_name_from_callstack():
             raise RuntimeError('Should not be using this class in tests!')
         super().__init__()
         self.pr_event = pr_event
+        pull_botleague()
 
     def get_changed_files(self) -> List[Box]:
         if self.changed_files is None:
