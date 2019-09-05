@@ -21,6 +21,28 @@ python main.py
 ~/bin/ngrok http 8888
 ```
 
+Or if you want to test problem endpoint locally as well, you can add the 
+following to your `~/.ngrok2/ngrok.yml`
+
+```
+authtoken: your-auth-token
+
+
+tunnels:
+  bll:
+    proto: http
+    addr: 8888
+  problem-endpoint:
+    proto: http
+    addr: 8000
+```
+
+Then run this to start both 
+
+```
+ngrok start bll problem-endpoint
+```
+
 Test hooks within https://github.com/botleague/botleague/settings/hooks
 
 
