@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 
-from box import Box
+from box import Box, BoxList
 
 
 class PrResponse:
@@ -32,6 +32,18 @@ class EvalStartedPrResponse(StartedPrResponse):
     def __init__(self, msg, eval_data):
         super().__init__(msg)
         self.eval_data = eval_data
+
+
+class ProblemCIResponse(StartedPrResponse):
+    bot_evals: Optional[List] = None
+
+    def __init__(self, msg, bot_evals):
+        super().__init__(msg)
+        self.eval_data = bot_evals
+
+
+class NoBotsResponse(PrResponse):
+    pass
 
 
 class EvalErrorPrResponse(ErrorPrResponse):

@@ -110,6 +110,7 @@ class BotEvalBase:
             problem_def_url = '%s/%s/%s' % (
                 constants.PROBLEMS_DIR, problem_id,
                 constants.PROBLEM_DEFINITION_FILENAME)
+
             # Ensure the problem exists
             problem_def = self.github_get(self.base_repo, problem_def_url)
             if not problem_def:

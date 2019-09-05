@@ -13,6 +13,8 @@ from box import Box
 
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
+
+from problem_ci import process_changed_problem
 from responses.pr_responses import ErrorPrResponse, StartedPrResponse, \
     RegenPrResponse, IgnorePrResponse, PrResponse, EvalStartedPrResponse, \
     EvalErrorPrResponse
@@ -45,12 +47,13 @@ class PrProcessorBase:
         self.pull_number = pull_request.number
 
         # Get all the changed files in a pull request
-        self.changed_files = self.get_changed_files()
+        self.changed_files: List[Box] = self.get_changed_files()
 
         (base_dirs,
          botname_dirs,
          changed_filenames,
          changed_filetypes,
+         changed_problem_definitions,
          user_org_dirs,
          err) = group_changed_files(self.changed_files)
 
@@ -59,7 +62,8 @@ class PrProcessorBase:
 
         resp, should_gen = self.dispatch(
             base_dirs, botname_dirs, changed_filenames, changed_filetypes,
-            self.changed_files, err, pull_request, should_gen, user_org_dirs)
+            self.changed_files, err, pull_request, should_gen, user_org_dirs,
+            changed_problem_definitions)
         if should_gen:
             trigger_leaderboard_generation()
 
@@ -99,7 +103,8 @@ class PrProcessorBase:
     def dispatch(self, base_dirs, botname_dirs, changed_filenames,
                  changed_filetypes, changed_files,
                  err, pull_request, should_gen,
-                 user_dirs) -> Tuple[Union[PrResponse, List[PrResponse]], bool]:
+                 user_dirs, changed_problem_definitions) -> \
+            Tuple[Union[PrResponse, List[PrResponse]], bool]:
         if err is not None:
             resp = err
         elif base_dirs == [constants.BOTS_DIR]:
@@ -117,10 +122,18 @@ class PrProcessorBase:
         elif base_dirs == [constants.PROBLEMS_DIR]:
             # If this is an existing problem, trigger a problem rerun
             # If it's a new problem, just return should_gen
-            # TODO: Verify that a problem submission does not change the name of
-            #  an existing problem - use "renamed" to key off of as we did with
-            #  bots
-            pass
+            resp, should_gen = process_changed_problem(
+                changed_problem_definitions,
+                base_repo=self.base_repo,
+                changed_filenames=changed_filenames,
+                changed_files=changed_files,
+                head_repo=self.head_repo,
+                pull_request=pull_request,
+                user_dirs=user_dirs,
+                changed_filetypes=changed_filetypes,
+                from_mock=self.is_mock,
+                github_client=self.github_client
+            )
         elif constants.BOTS_DIR in base_dirs or \
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
@@ -171,6 +184,7 @@ class PrProcessor(PrProcessorBase):
         pull_botleague()
 
     def get_changed_files(self) -> List[Box]:
+        # See tests/data/bot_eval/changed_files.json
         if self.changed_files is None:
             ret = list(self.base_repo.get_pull(self.pull_number).get_files())
             ret = [Box(r.raw_data) for r in ret]
@@ -242,6 +256,7 @@ def group_changed_files(changed_files: List[Box]):
     problem_dirs = set()
     changed_filenames = []
     changed_filetypes = set()
+    changed_problem_definitions = set()
     err = None
     for changed_file in changed_files:
         filename = changed_file.filename
@@ -283,6 +298,7 @@ def group_changed_files(changed_files: List[Box]):
                 err = ErrorPrResponse(constants.RENAME_PROBLEM_ERROR_MSG)
                 break
             else:
+                add_changed_problem(changed_problem_definitions, changed_file)
                 user_org_dirs.add(path_parts[1])
                 problem_dirs.add(path_parts[2])
         base_dirs.add(base_dir)
@@ -290,7 +306,8 @@ def group_changed_files(changed_files: List[Box]):
         changed_filetypes.add(filetype)
     base_dirs = list(base_dirs)
     pre_ret = (base_dirs, botname_dirs, changed_filenames,
-               changed_filetypes, user_org_dirs, err)
+               changed_filetypes, changed_problem_definitions,
+               user_org_dirs, err)
 
     ret = []
     for item in pre_ret:
@@ -300,3 +317,14 @@ def group_changed_files(changed_files: List[Box]):
             ret.append(item)
     return ret
 
+
+def add_changed_problem(changed_problem_definitions, changed_file):
+    modified = changed_file.status == 'modified'
+    is_prob_def = changed_file.filename.endswith(
+        constants.PROBLEM_DEFINITION_FILENAME)
+    if modified and is_prob_def:
+        changed_problem_definitions.add(changed_file.filename)
+
+
+if __name__ == '__main__':
+    pull_botleague()

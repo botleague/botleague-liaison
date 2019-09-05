@@ -1,4 +1,5 @@
 import os
+from os.path import dirname, join, realpath
 
 ROOT_DIR = dirname(realpath(__file__))
 BOTLEAGUE_REPO_ROOT = join(ROOT_DIR, 'botleague')
