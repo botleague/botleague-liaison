@@ -69,7 +69,8 @@ def merge_pull_request(pull_request: Box) -> Error:
     if blconfig.is_test or get_test_name_from_callstack():
         log.info('Skipping pr merge in test')
     else:
-        log.info(f'Merging pull request {pull_request.to_json(indent=2)}')
+        log.info(f'Merging pull request '
+                 f'{pull_request.to_json(indent=2, default=str)}')
         github_client = Github(blconfig.github_token)
         repo = github_client.get_repo(pull_request.base_full_name)
         pr = repo.get_pull(pull_request.number)
@@ -84,7 +85,7 @@ def merge_pull_request(pull_request: Box) -> Error:
 
     if error:
         log.error(f'Error merging pull request '
-                  f'{error.to_json(indent=2)}')
+                  f'{error.to_json(indent=2, default=str)}')
 
     return error
 
