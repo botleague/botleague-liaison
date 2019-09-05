@@ -36,6 +36,10 @@ def get_str_or_box(content_str, filename):
     return ret
 
 
+def read_box(json_filename) -> Box:
+    ret = Box().from_json(filename=json_filename)
+    return ret
+
 def write_json(obj, path):
     with open(path, 'w') as f:
         json.dump(obj, f, indent=2)
