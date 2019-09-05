@@ -286,6 +286,8 @@ def process_changed_bot(
     should_gen_leaderboard = False
     user_dirs = list(user_dirs)
     if len(user_dirs) > 1:
+        # TODO: Nothing wrong with enabling this except for risk of
+        #   evaling a ton of bots on accident
         resp = ErrorPrResponse(
             'Can only submit bots for one user at a time')
     elif len(botname_dirs) > 1:
