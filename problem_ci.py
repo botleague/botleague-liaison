@@ -3,6 +3,7 @@ from os.path import join
 
 import github
 from box import Box
+from loguru import logger as log
 
 from bot_eval import get_bot_eval
 from responses.pr_responses import RegenPrResponse, ErrorPrResponse, \
@@ -43,21 +44,33 @@ def process_changed_problem(changed_problem_definitions,
         if not bots_with_problem:
             resp = NoBotsResponse('No bots with this problem, nothing to eval')
         else:
-            bot_evals = []
-            for (bot_user, botname), bot in bots_with_problem.items():
-                bot_eval = get_bot_eval(use_mock=from_mock)(
-                    botname=botname,
-                    changed_filenames=changed_filenames,
-                    changed_files=changed_files,
-                    user_or_org_dir=bot_user,
-                    base_repo=base_repo,
-                    head_repo=head_repo,
-                    pull_request=pull_request,
-                    github_client=github_client)
-                trigger_resp = bot_eval.trigger_single_eval(
-                    bot_def=bot, problem_def=prob_def, problem_id=problem_id)
-                bot_evals.append(trigger_resp.eval_data)
-            resp = ProblemCIResponse(f'Triggered {len(bot_evals)} evals',
-                                     bot_evals)
-
+            resp = eval_bots(base_repo, bots_with_problem, changed_filenames,
+                             changed_files, from_mock, github_client, head_repo,
+                             prob_def, problem_id, pull_request)
     return resp, should_gen
+
+
+def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
+              from_mock, github_client, head_repo, prob_def, problem_id,
+              pull_request):
+    bot_evals = []
+    for (bot_user, botname), bot in bots_with_problem.items():
+        bot_eval = get_bot_eval(use_mock=from_mock)(
+            botname=botname,
+            changed_filenames=changed_filenames,
+            changed_files=changed_files,
+            user_or_org_dir=bot_user,
+            base_repo=base_repo,
+            head_repo=head_repo,
+            pull_request=pull_request,
+            github_client=github_client)
+        trigger_resp = bot_eval.trigger_single_eval(
+            bot_def=bot, problem_def=prob_def, problem_id=problem_id)
+        eval_data = trigger_resp.eval_data
+        bot_evals.append(eval_data)
+        log.success(f'Triggered '
+                    f'{eval_data.to_json(indent=2, default=str)}')
+    ci_message = f'Triggered {len(bot_evals)} evals'
+    resp = ProblemCIResponse(ci_message, bot_evals)
+    log.success(ci_message)
+    return resp
