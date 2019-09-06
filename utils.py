@@ -103,5 +103,8 @@ def get_liaison_db_store():
     return ret
 
 
+def dbox(obj):
+    return Box(obj, default_box=True)
+
 # if __name__ == '__main__':
 #     trigger_leaderboard_generation()

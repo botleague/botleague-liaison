@@ -16,7 +16,7 @@ from models.eval_data import get_eval_data, save_eval_data
 from loguru import logger as log
 
 from responses.error import Error
-from utils import trigger_leaderboard_generation, get_liaison_db_store
+from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox
 
 
 def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
@@ -74,14 +74,17 @@ def merge_pull_request(pull_request: Box) -> Error:
         github_client = Github(blconfig.github_token)
         repo = github_client.get_repo(pull_request.base_full_name)
         pr = repo.get_pull(pull_request.number)
-        try:
-            merge_status = pr.merge('Automatically merged by Botleague')
-            if not merge_status.merged:
-                error.message = merge_status.message
-                error.http_status_code = 400
-        except GithubException as e:
-            error.message = str(e)
-            error.http_status_code = e.status
+        if dbox(pr.raw_data).draft:
+            log.info('Pull request is draft, not trying to merge')
+        else:
+            try:
+                merge_status = pr.merge('Automatically merged by Botleague')
+                if not merge_status.merged:
+                    error.message = merge_status.message
+                    error.http_status_code = 400
+            except GithubException as e:
+                error.message = str(e)
+                error.http_status_code = e.status
 
     if error:
         log.error(f'Error merging pull request '
