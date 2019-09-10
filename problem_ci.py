@@ -1,5 +1,6 @@
 from glob import glob
 from os.path import join
+from typing import Union
 
 import github
 from box import Box
@@ -7,9 +8,10 @@ from loguru import logger as log
 
 from bot_eval import get_bot_eval
 from responses.pr_responses import RegenPrResponse, ErrorPrResponse, \
-    ProblemCIResponse, NoBotsResponse
-from constants import BOTLEAGUE_REPO_ROOT
-from utils import read_box
+    ProblemCIResponse, NoBotsResponse, EvalStartedPrResponse, \
+    EvalErrorPrResponse
+from constants import BOTLEAGUE_REPO_ROOT, ONGOING_PROBLEM_CI_KEY_PREFIX
+from utils import read_box, get_liaison_db_store
 
 
 def process_changed_problem(changed_problem_definitions,
@@ -47,12 +49,30 @@ def process_changed_problem(changed_problem_definitions,
             resp = eval_bots(base_repo, bots_with_problem, changed_filenames,
                              changed_files, from_mock, github_client, head_repo,
                              prob_def, problem_id, pull_request)
+            if isinstance(resp, ProblemCIResponse):
+                problem_ci = Box(
+                    pull_request=pull_request,
+                    bot_eval_ids=[b.eval_id for b in resp.bot_evals],)
+                db = get_liaison_db_store()
+                db_key = get_problem_ci_db_key(
+                    pull_number=pull_request.number,
+                    pull_head_commit=pull_request.head.sha[:6])
+                db.set(db_key, problem_ci)
+                log.success(f'Started problem ci: {db_key}')
+
     return resp, should_gen
+
+
+def get_problem_ci_db_key(pull_number, pull_head_commit):
+    ret = f'{ONGOING_PROBLEM_CI_KEY_PREFIX}_' \
+          f'PR:{pull_number}-' \
+          f'sha:{pull_head_commit[:6]}'
+    return ret
 
 
 def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
               from_mock, github_client, head_repo, prob_def, problem_id,
-              pull_request):
+              pull_request) -> Union[ProblemCIResponse, EvalErrorPrResponse]:
     bot_evals = []
     for (bot_user, botname), bot in bots_with_problem.items():
         bot_eval = get_bot_eval(use_mock=from_mock)(
@@ -66,10 +86,15 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
             github_client=github_client)
         trigger_resp = bot_eval.trigger_single_eval(
             bot_def=bot, problem_def=prob_def, problem_id=problem_id)
-        eval_data = trigger_resp.eval_data
-        bot_evals.append(eval_data)
-        log.success(f'Triggered '
-                    f'{eval_data.to_json(indent=2, default=str)}')
+        if isinstance(trigger_resp, EvalStartedPrResponse):
+            eval_data = trigger_resp.eval_data
+            bot_evals.append(eval_data)
+            log.success(f'Triggered '
+                        f'{eval_data.to_json(indent=2, default=str)}')
+        elif isinstance(trigger_resp, EvalErrorPrResponse):
+            log.error(f'Could not evaluate bot {bot_user}:{botname}. '
+                      f'Error: {trigger_resp.msg}')
+            return trigger_resp
     ci_message = f'Triggered {len(bot_evals)} evals'
     resp = ProblemCIResponse(ci_message, bot_evals)
     log.success(ci_message)
