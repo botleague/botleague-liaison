@@ -132,8 +132,7 @@ class PrProcessorBase:
                 user_dirs=user_dirs,
                 changed_filetypes=changed_filetypes,
                 from_mock=self.is_mock,
-                github_client=self.github_client
-            )
+                github_client=self.github_client,)
         elif constants.BOTS_DIR in base_dirs or \
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
