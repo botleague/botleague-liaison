@@ -39,6 +39,15 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
 
     update_pr_status(error, eval_data, results, gist)
 
+    # TODO: Check to see if PR is a problem CI and only merge if this is the
+    #  last bot?
+
+    pr = eval_data.pull_request
+    possible_problem_ci_key = get_problem_ci_db_key(pr.number, pr.head_commit)
+    if db.get(possible_problem_ci_key):
+        # Check all bot ids in ci for completion.
+        pass
+
     if not error:
         error = merge_pull_request(eval_data.pull_request)
 
