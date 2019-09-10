@@ -1,6 +1,8 @@
+import json
 import os
 import random
 import time
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from typing import List, Union, Tuple
 from loguru import logger as log
 from box import Box, BoxList
@@ -135,7 +137,9 @@ class BotEvalBase:
         eval_data = self.get_eval_data(eval_id, eval_key, problem_id, bot_def,
                                        problem_def)
         db = get_liaison_db_store()
-        db.set(get_eval_db_key(eval_data.eval_key), eval_data)
+        db_key = get_eval_db_key(eval_data.eval_key)
+        db.set(db_key, eval_data)
+        eval_data = db.get(db_key)  # Resolve timestamp
         resp = self.request_eval(endpoint, eval_data)
         return resp
 
@@ -165,6 +169,7 @@ class BotEvalBase:
                         username=self.user_or_org_dir,
                         status=constants.EVAL_STATUS_STARTED,
                         started=now,
+                        started_at=SERVER_TIMESTAMP,
                         source_commit=bot_def.source_commit,
                         league_commit_sha=head_commit,
                         pull_request=dict(
@@ -205,8 +210,9 @@ class BotEval(BotEvalBase):
             if 'REPLACE_PROBLEM_HOST' in os.environ:
                 endpoint = os.environ['REPLACE_PROBLEM_HOST'] + \
                            endpoint[endpoint.find('/eval'):]
-
-            endpoint_resp = requests.post(endpoint, json=eval_data.to_dict(),
+            serializable_data = json.loads(eval_data.to_json(default=str))
+            endpoint_resp = requests.post(endpoint,
+                                          json=serializable_data,
                                           timeout=10)
         except requests.exceptions.Timeout:
             ret = EvalErrorPrResponse(
@@ -218,10 +224,12 @@ class BotEval(BotEvalBase):
                     'Endpoint %s failed with HTTP %r, response body was %s'
                     % (endpoint, endpoint_resp.status_code,
                        endpoint_resp.content))
+                log.error(ret.msg)
             else:
                 ret = EvalStartedPrResponse('Started evaluation at %s' %
                                             endpoint, eval_data)
                 # Now wait for a /confirm and /results request with the eval_key
+        log.info(f'Request eval resp: {ret.msg}')
         return ret
 
     def user_in_org(self, user, org):

@@ -1,5 +1,6 @@
 import time
 from botleague_helpers.crypto import decrypt_symmetric
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from typing import Tuple, Optional
 
 import github
@@ -28,6 +29,11 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     db = get_liaison_db_store()
     error, results, eval_data, gist = process_results(data, db)
     eval_data.status = constants.EVAL_STATUS_COMPLETE
+    eval_data.results = Box(
+        gist=gist,
+        error=error,
+        results=results,)
+    eval_data.results_at = SERVER_TIMESTAMP
     save_eval_data(eval_data, db)
 
     update_pr_status(error, eval_data, results, gist)
