@@ -39,7 +39,7 @@ class ProblemCIResponse(StartedPrResponse):
 
     def __init__(self, msg, bot_evals):
         super().__init__(msg)
-        self.eval_data = bot_evals
+        self.bot_evals = bot_evals
 
 
 class NoBotsResponse(PrResponse):
