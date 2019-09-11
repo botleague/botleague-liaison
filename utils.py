@@ -103,7 +103,8 @@ def get_liaison_db_store():
     return ret
 
 
-def dbox(obj):
+def dbox(obj=None):
+    obj = obj or {}
     return Box(obj, default_box=True)
 
 # if __name__ == '__main__':
