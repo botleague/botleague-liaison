@@ -1,6 +1,8 @@
 import math
 import sys
 import time
+from statistics import mean, median, stdev
+
 from botleague_helpers.crypto import decrypt_symmetric
 from botleague_helpers.reduce import try_reduce_async
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
@@ -37,24 +39,63 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     eval_data.results = Box(
         gist=gist,
         error=error,
-        results=results,)
+        results=results, )
     eval_data.results_at = SERVER_TIMESTAMP
     save_eval_data(eval_data, db)
-
-    # TODO: Save to bot scores
-    # TODO: Save to problem scores
-
     update_pr_status(error, eval_data, results, gist)
 
-    should_merge = handle_problem_ci(db, eval_data)
+    # Handle problem ci before saving bot scores as we want to compare the
+    # new bot scores to the previous
+    is_problem_ci, should_merge = handle_problem_ci(db, eval_data)
+
+    # If problem_ci fails, don't save bot score
+
+    if is_problem_ci and not should_merge:
+        log.warning('Problem CI failed, not saving to bots official scores '
+                    'as this is likely an issue with the new '
+                    'version of the problem.')
+    else:
+        save_to_bot_scores(eval_data, eval_data.eval_key,  results.score)
+
+    # TODO: Save aggregate problem scores?
 
     if should_merge and not error:
         error = merge_pull_request(eval_data.pull_request)
-
     if error:
         results.error = error
+    return error
 
-    return results, error, gist
+
+def save_to_bot_scores(eval_data, eval_key, score):
+    db = get_scores_db()
+    score_id = get_scores_id(eval_data)
+    orig = db.get(score_id)
+    bot_scores = db.get(score_id) or dbox(Box(scores=[]))
+    recorded = bot_scores and \
+               any([b.eval_key == eval_key for b in bot_scores.scores])
+    if not recorded:
+        bot_scores.scores.append(score)
+        score_values = [s.score for s in bot_scores.scores]
+        if len(bot_scores) < 2:
+            score_stdev = None
+        else:
+            score_stdev = stdev(score_values)
+        new_bot_scores = Box(scores=bot_scores.scores,
+                              id=score_id,
+                              updated_at=SERVER_TIMESTAMP,
+                              mean=mean(score_values),
+                              max=max(score_values),
+                              min=min(score_values),
+                              median=median(score_values),
+                              stdev=score_stdev)
+        if not orig:
+            new_bot_scores.created_at = SERVER_TIMESTAMP
+        if not db.cas(score_id, orig, new_bot_scores):
+            log.warning('Race condition saving bot scores! Trying again.')
+            save_to_bot_scores(eval_data, eval_key, score)
+        else:
+            log.success(f'Saved new bot scores '
+                        f'{new_bot_scores.to_json(indent=2, default=str)}')
 
 
 def handle_problem_ci(db: DB, eval_data: Box) -> bool:
@@ -69,8 +110,7 @@ def handle_problem_ci(db: DB, eval_data: Box) -> bool:
         should_merge = True
     else:
         def reduce():
-            # Get all bot scores
-            # Refetch all bots in case scores came in during fan_in
+            # Refetch all bots in case scores came in after initial request
             for bot_eval_key in problem_ci.bot_eval_keys:
                 bot_eval = db.get(get_eval_db_key(bot_eval_key))
                 past_bot_scores = get_scores_db().get(get_scores_id(bot_eval))

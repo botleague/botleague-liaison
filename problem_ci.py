@@ -3,7 +3,9 @@ from os.path import join
 from typing import Union
 
 import github
+from botleague_helpers.reduce import create_reduce
 from box import Box
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from loguru import logger as log
 
 from bot_eval import get_bot_eval
@@ -77,6 +79,12 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
               from_mock, github_client, head_repo, prob_def, problem_id,
               pull_request) -> Union[ProblemCIResponse, EvalErrorPrResponse]:
     bot_evals = []
+
+    # Create the reduce record that we will use to fan in results
+    create_reduce(get_problem_ci_db_key(
+                    pull_number=pull_request.number,
+                    pull_head_commit=pull_request.head.sha[:6]))
+
     for (bot_user, botname), bot in bots_with_problem.items():
         bot_eval = get_bot_eval(use_mock=from_mock)(
             botname=botname,
