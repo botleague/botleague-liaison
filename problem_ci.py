@@ -52,7 +52,8 @@ def process_changed_problem(changed_problem_definitions,
             if isinstance(resp, ProblemCIResponse):
                 problem_ci = Box(
                     pull_request=pull_request,
-                    bot_eval_ids=[b.eval_id for b in resp.bot_evals],)
+                    bot_eval_keys=[b.eval_key for b in resp.bot_evals],
+                    prob_def=prob_def,)
                 db = get_liaison_db_store()
                 db_key = get_problem_ci_db_key(
                     pull_number=pull_request.number,

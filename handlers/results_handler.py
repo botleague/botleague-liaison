@@ -1,12 +1,15 @@
+import math
+import sys
 import time
 from botleague_helpers.crypto import decrypt_symmetric
+from botleague_helpers.reduce import try_reduce_async
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from typing import Tuple, Optional
 
 import github
 from botleague_helpers.config import get_test_name_from_callstack, blconfig
-from botleague_helpers.db import DB
-from box import Box
+from botleague_helpers.db import DB, get_db
+from box import Box, BoxList
 from github import Github, PullRequestMergeStatus, GithubException
 import github.Gist
 
@@ -25,6 +28,7 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     """
     Handles results POSTS from problem evaluators at the end of evaluation
     """
+    should_merge = True
     data = Box(request.json)
     log.info(f'Handling results request {data.to_json(indent=2)}')
     db = get_liaison_db_store()
@@ -37,24 +41,114 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     eval_data.results_at = SERVER_TIMESTAMP
     save_eval_data(eval_data, db)
 
+    # TODO: Save to bot scores
+    # TODO: Save to problem scores
+
     update_pr_status(error, eval_data, results, gist)
 
-    # TODO: Check to see if PR is a problem CI and only merge if this is the
-    #  last bot?
+    should_merge = handle_problem_ci(db, eval_data)
 
-    pr = eval_data.pull_request
-    possible_problem_ci_key = get_problem_ci_db_key(pr.number, pr.head_commit)
-    if db.get(possible_problem_ci_key):
-        # Check all bot ids in ci for completion.
-        pass
-
-    if not error:
+    if should_merge and not error:
         error = merge_pull_request(eval_data.pull_request)
 
     if error:
         results.error = error
 
     return results, error, gist
+
+
+def handle_problem_ci(db: DB, eval_data: Box) -> bool:
+    """
+    Check to see if PR is a problem CI and merge iff this is the last bot
+    :return: Whether we should merge or not
+    """
+    pr = eval_data.pull_request
+    problem_ci_db_key = get_problem_ci_db_key(pr.number, pr.head_commit)
+    problem_ci = db.get(problem_ci_db_key)
+    if not problem_ci:
+        should_merge = True
+    else:
+        def reduce():
+            # Get all bot scores
+            # Refetch all bots in case scores came in during fan_in
+            for bot_eval_key in problem_ci.bot_eval_keys:
+                bot_eval = db.get(get_eval_db_key(bot_eval_key))
+                past_bot_scores = get_scores_db().get(get_scores_id(bot_eval))
+                if not score_within_confidence_interval(bot_eval,
+                                                        past_bot_scores):
+                    return False
+            else:
+                return True
+
+        reduce_result = try_reduce_async(
+            reduce_id=problem_ci_db_key,
+            ready_fn=get_bots_done_fn(db, problem_ci.bot_eval_keys),
+            reduce_fn=reduce)
+        if reduce_result:
+            should_merge = True
+        else:
+            should_merge = False
+    return should_merge
+
+
+def score_within_confidence_interval(bot_eval: Box,
+                                     past_bot_scores: Box) -> bool:
+    """
+    Compare with current mean score and check within
+    acceptable_score_deviation range.
+    If only 1 score, roughly
+    double the acceptable range, since we could
+    have gone from min to max.
+    Also, follow the 2-sided CI for a t-student distribution
+    that gives 2x the acceptable_score_deviation with infinite
+    samples (i.e. ± acceptable_score_deviation)
+    https://en.wikipedia.org/wiki/Student%27s_t-distribution#Table_of_selected_values
+    https://stats.stackexchange.com/a/230185/18187
+
+      n  Confidence Level  Multiplicative Factor
+      2       0.95              12.71
+      3       0.95               4.30
+      4       0.95               3.18
+      5       0.95               2.78
+     infinity 0.95               1.96
+
+    """
+    score = bot_eval.results.score
+    acceptable_score_deviation = bot_eval.prob_def.acceptable_score_deviation
+    if not past_bot_scores.scores:
+        # If no previous scores, then we're good
+        return True
+    score_values = [b.score for b in past_bot_scores.scores]
+    multiplier = {
+        2: 12.71,
+        3:  4.30,
+        4:  3.18,
+        5:  2.78,
+    }.get(len(score_values) + 1, 1.96)
+
+    diff_max = acceptable_score_deviation * multiplier / 2
+    ci_low = past_bot_scores.mean - diff_max
+    ci_high = past_bot_scores.mean + diff_max
+
+    if math.nan in [ci_high, ci_low]:
+        ret = True
+    elif ci_low <= score <= ci_high:
+        ret = True
+    else:
+        ret = False
+    return ret
+
+
+
+def get_bots_done_fn(db, bot_eval_keys) -> callable:
+    def bots_done():
+        for bot_eval_key in bot_eval_keys:
+            bot = db.get(get_eval_db_key(bot_eval_key))
+            if bot.status != constants.EVAL_STATUS_COMPLETE:
+                return False
+        else:
+            return True
+    return bots_done
 
 
 def update_pr_status(error, eval_data, results, gist):
@@ -174,3 +268,48 @@ def add_eval_data_to_results(eval_data: Box, results: Box):
     results.source_commit = eval_data.source_commit
     results.seed = eval_data.seed
     results.utc_timestamp = time.time()
+
+
+def get_scores_id(eval):
+    return f'{eval.username}#{eval.botname}'
+
+
+def collect_bot_scores(docker_tag=
+                       'deepdriveio/deepdrive:bot_domain_randomization'):
+    from statistics import mean, median, stdev
+    # One time method
+    job_db = get_db('deepdrive_jobs')
+    scores_db = get_scores_db()
+    ldb = get_liaison_db_store()
+    for job in job_db.where('eval_spec.docker_tag', '==', docker_tag):
+        eval_key = job.eval_spec.eval_key
+        eval = ldb.get(get_eval_db_key(eval_key))
+        score = Box(score=job.results.score, eval_key=eval_key)
+        score_id = get_scores_id(eval)
+        bot_scores = scores_db.get(score_id) or dbox(Box(scores=[]))
+        recorded = bot_scores and \
+                   any([b.eval_key == eval_key for b in bot_scores.scores])
+        if not recorded:
+            bot_scores.scores.append(score)
+            score_values = [s.score for s in bot_scores.scores]
+            if len(bot_scores) < 2:
+                score_stdev = None
+            else:
+                score_stdev = stdev(score_values)
+            scores_db.set(score_id, Box(scores=bot_scores.scores,
+                                        id=score_id,
+                                        updated_at=SERVER_TIMESTAMP,
+                                        mean=mean(score_values),
+                                        max=max(score_values),
+                                        min=min(score_values),
+                                        median=median(score_values),
+                                        stdev=score_stdev))
+
+
+def get_scores_db():
+    return get_db('botleague_liaison_bot_scores')
+
+
+if __name__ == '__main__':
+    if 'collect_bot_scores' in sys.argv:
+          collect_bot_scores()
