@@ -161,6 +161,9 @@ def score_within_confidence_interval(bot_eval: Box,
      infinity 0.95               1.96
 
     """
+    if bot_eval.eval_key in [p.eval_key for p in past_bot_scores.scores]:
+        log.warning('Score already recorded, this should not happen!')
+        return True
     score = bot_eval.results.score
     acceptable_score_deviation = bot_eval.prob_def.acceptable_score_deviation
     if not past_bot_scores.scores:
