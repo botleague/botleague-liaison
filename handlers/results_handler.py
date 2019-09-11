@@ -322,8 +322,14 @@ def get_scores_id(eval):
 
 def collect_bot_scores(docker_tag=
                        'deepdriveio/deepdrive:bot_domain_randomization'):
-    from statistics import mean, median, stdev
-    # One time method
+    """
+    Catches up bot scores using deepdrive_jobs. This is a violation of
+    data boundaries across deepdrive and botleague, and won't be possible
+    for future independent problem providers. We are now storing results
+    in the bot_eval data as well, to avoid such problems in the future.
+    Alternatively, we could have just downloaded all results from
+    gist/botleague-results which is a source of truth, but this was easier.
+    """
     job_db = get_db('deepdrive_jobs')
     scores_db = get_scores_db()
     ldb = get_liaison_db_store()
