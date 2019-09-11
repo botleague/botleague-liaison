@@ -336,31 +336,12 @@ def collect_bot_scores(docker_tag=
     gist/botleague-results which is a source of truth, but this was easier.
     """
     job_db = get_db('deepdrive_jobs')
-    scores_db = get_scores_db()
     ldb = get_liaison_db_store()
     for job in job_db.where('eval_spec.docker_tag', '==', docker_tag):
         eval_key = job.eval_spec.eval_key
-        eval = ldb.get(get_eval_db_key(eval_key))
+        eval_data = ldb.get(get_eval_db_key(eval_key))
         score = Box(score=job.results.score, eval_key=eval_key)
-        score_id = get_scores_id(eval)
-        bot_scores = scores_db.get(score_id) or dbox(Box(scores=[]))
-        recorded = bot_scores and \
-                   any([b.eval_key == eval_key for b in bot_scores.scores])
-        if not recorded:
-            bot_scores.scores.append(score)
-            score_values = [s.score for s in bot_scores.scores]
-            if len(bot_scores) < 2:
-                score_stdev = None
-            else:
-                score_stdev = stdev(score_values)
-            scores_db.set(score_id, Box(scores=bot_scores.scores,
-                                        id=score_id,
-                                        updated_at=SERVER_TIMESTAMP,
-                                        mean=mean(score_values),
-                                        max=max(score_values),
-                                        min=min(score_values),
-                                        median=median(score_values),
-                                        stdev=score_stdev))
+        save_to_bot_scores(eval_data, eval_key, score)
 
 
 def get_scores_db():
