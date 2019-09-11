@@ -53,7 +53,9 @@ def process_changed_problem(changed_problem_definitions,
                 problem_ci = Box(
                     pull_request=pull_request,
                     bot_eval_keys=[b.eval_key for b in resp.bot_evals],
-                    prob_def=prob_def,)
+                    prob_def=prob_def,
+                    local_debug=local_debug,
+                    created_at=SERVER_TIMESTAMP)
                 db = get_liaison_db_store()
                 db_key = get_problem_ci_db_key(
                     pull_number=pull_request.number,
