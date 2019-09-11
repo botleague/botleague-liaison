@@ -30,11 +30,17 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     """
     Handles results POSTS from problem evaluators at the end of evaluation
     """
-    should_merge = True
     data = Box(request.json)
     log.info(f'Handling results request {data.to_json(indent=2)}')
     db = get_liaison_db_store()
-    error, results, eval_data, gist = process_results(data, db)
+    error, results, eval_data, gist, should_skip = process_results(data, db)
+    if not should_skip:
+        error = save_results(db, error, eval_data, gist, results)
+
+    return results, error, gist
+
+
+def save_results(db, error, eval_data, gist, results):
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     eval_data.results = Box(
         gist=gist,

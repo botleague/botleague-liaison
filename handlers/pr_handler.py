@@ -14,6 +14,7 @@ from box import Box
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
 
+from constants import ON_GAE
 from problem_ci import process_changed_problem
 from responses.pr_responses import ErrorPrResponse, StartedPrResponse, \
     RegenPrResponse, IgnorePrResponse, PrResponse, EvalStartedPrResponse, \
@@ -31,6 +32,7 @@ class PrProcessorBase:
     pr_event: Box
     changed_files: List[Box] = None
     _github_client: github.Github = None
+    local_debug = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # Support multiple inheritance
@@ -45,6 +47,7 @@ class PrProcessorBase:
         base_repo_name = pull_request.base.repo.full_name
         self.base_repo = self.get_repo(base_repo_name)
         self.pull_number = pull_request.number
+        self.local_debug = pr_is_local_debug(pull_request)
 
         # Get all the changed files in a pull request
         self.changed_files: List[Box] = self.get_changed_files()
@@ -118,7 +121,8 @@ class PrProcessorBase:
                 user_dirs=user_dirs,
                 changed_filetypes=changed_filetypes,
                 from_mock=self.is_mock,
-                github_client=self.github_client)
+                github_client=self.github_client,
+                local_debug=self.local_debug,)
         elif base_dirs == [constants.PROBLEMS_DIR]:
             # If this is an existing problem, trigger a problem rerun
             # If it's a new problem, just return should_gen
@@ -132,7 +136,8 @@ class PrProcessorBase:
                 user_dirs=user_dirs,
                 changed_filetypes=changed_filetypes,
                 from_mock=self.is_mock,
-                github_client=self.github_client,)
+                github_client=self.github_client,
+                local_debug=self.local_debug,)
         elif constants.BOTS_DIR in base_dirs or \
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
@@ -327,3 +332,8 @@ def add_changed_problem(changed_problem_definitions, changed_file):
 
 if __name__ == '__main__':
     pull_botleague()
+
+
+def pr_is_local_debug(pull_request):
+    return ON_GAE and pull_request.body == 'DEBUG_LOCAL'
+

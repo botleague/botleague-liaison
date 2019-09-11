@@ -3,7 +3,7 @@ from box import Box
 from pyramid.view import view_config, view_defaults
 
 from constants import ON_GAE
-from handlers.pr_handler import get_pr_processor
+from handlers.pr_handler import get_pr_processor, pr_is_local_debug
 from pyramid import httpexceptions
 from loguru import logger as log
 
@@ -76,10 +76,17 @@ class PayloadView(object):
         action = self.payload['action']
         if action in ['opened', 'synchronize', 'reopened']:
             pr_processor = get_pr_processor()
-            pr_processor.pr_event = Box(self.payload)
-            log.info(f'Processing pull request event ')
-            log.trace(f'{pr_processor.pr_event.to_json(indent=2)}')
-            pr_processor.process_changes()
+            pr_event = Box(self.payload)
+            pull_request = pr_event.pull_request
+            pr_processor.pr_event = pr_event
+            if pr_is_local_debug(pull_request):
+                log.warning(f'DEBUG local set on pull request '
+                         f'{pr_event.to_json(indent=2)} '
+                         f'Skipping!')
+            else:
+                log.info(f'Processing pull request event')
+                log.trace(f'{pr_event.to_json(indent=2)}')
+                pr_processor.process_changes()
 
         # Responses are sent via creating statuses on the pull request:
         #   c.f. create_status

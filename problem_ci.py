@@ -20,7 +20,8 @@ def process_changed_problem(changed_problem_definitions,
                             base_repo, changed_filenames,
                             changed_files, head_repo, pull_request,
                             user_dirs, changed_filetypes, from_mock,
-                            github_client: github.Github):
+                            github_client: github.Github,
+                            local_debug=False):
     should_gen = False
     if not changed_problem_definitions:
         resp = RegenPrResponse(
@@ -50,7 +51,7 @@ def process_changed_problem(changed_problem_definitions,
         else:
             resp = eval_bots(base_repo, bots_with_problem, changed_filenames,
                              changed_files, from_mock, github_client, head_repo,
-                             prob_def, problem_id, pull_request)
+                             prob_def, problem_id, pull_request, local_debug)
             if isinstance(resp, ProblemCIResponse):
                 problem_ci = Box(
                     pull_request=pull_request,
@@ -77,7 +78,8 @@ def get_problem_ci_db_key(pull_number, pull_head_commit):
 
 def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
               from_mock, github_client, head_repo, prob_def, problem_id,
-              pull_request) -> Union[ProblemCIResponse, EvalErrorPrResponse]:
+              pull_request, local_debug=False) \
+        -> Union[ProblemCIResponse, EvalErrorPrResponse]:
     bot_evals = []
 
     # Create the reduce record that we will use to fan in results
@@ -94,7 +96,8 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
             base_repo=base_repo,
             head_repo=head_repo,
             pull_request=pull_request,
-            github_client=github_client)
+            github_client=github_client,
+            local_debug=local_debug)
         trigger_resp = bot_eval.trigger_single_eval(
             bot_def=bot, problem_def=prob_def, problem_id=problem_id)
         if isinstance(trigger_resp, EvalStartedPrResponse):
