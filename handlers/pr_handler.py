@@ -335,5 +335,5 @@ if __name__ == '__main__':
 
 
 def pr_is_local_debug(pull_request):
-    return ON_GAE and pull_request.body == 'DEBUG_LOCAL'
+    return ON_GAE and pull_request.body == 'LOCAL_DEBUG'
 

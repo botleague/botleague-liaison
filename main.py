@@ -62,8 +62,7 @@ def handle_confirm(request):
 
 def handle_root(request):
     return Response(f'Botleague liaison service<br>'
-                    f'https://github.com/botleague/botleague-liaison<br>'
-                    f'botleague-helpers version: {blconfig.version}')
+                    f'https://github.com/botleague/botleague-liaison<br>')
 
 
 def handle_adhoc():
