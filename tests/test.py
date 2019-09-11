@@ -1,13 +1,19 @@
 
 # Set SHOULD_RECORD=true to record changed-files.json
+import math
+import statistics
 from os.path import join
+from random import random
 
 from botleague_helpers.db import get_db
+from box import Box
+from loguru import logger as log
 
 import constants
 from bot_eval import get_eval_db_key
 from handlers.confirm_handler import process_confirm
-from handlers.results_handler import add_eval_data_to_results, process_results
+from handlers.results_handler import add_eval_data_to_results, process_results, \
+    score_within_confidence_interval
 from handlers.pr_handler import PrProcessorMock
 from models.eval_data import INVALID_DB_KEY_STATE_MESSAGE, get_eval_data
 from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
@@ -15,7 +21,7 @@ from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
 from botleague_helpers.config import activate_test_mode, blconfig
 
 from tests.mockable import Mockable
-from utils import get_liaison_db_store
+from utils import get_liaison_db_store, dbox
 
 activate_test_mode()  # So don't import this module from non-test code!
 
@@ -125,6 +131,69 @@ def test_confirm_handler():
     assert not error
     assert resp.confirmed
     assert eval_data.status == constants.EVAL_STATUS_CONFIRMED
+
+
+def test_score_within_confidence_interval():
+    bot_eval = dbox()
+    bot_eval.prob_def.acceptable_score_deviation = 100
+
+    bot_eval.results.score = 300
+    past_bot_scores = get_past_bot_scores([10, 100])
+
+    # Max score here is 270, so should fail
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+
+    # Min score here is -160, so should fail
+    bot_eval.results.score = -200
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+
+    # Let's pass
+    bot_eval.results.score = 200
+    assert score_within_confidence_interval(bot_eval, past_bot_scores)
+    bot_eval.results.score = -100
+    assert score_within_confidence_interval(bot_eval, past_bot_scores)
+
+    # Get more confident and fail
+    past_bot_scores = get_past_bot_scores([100, 100, 100])
+    bot_eval.results.score = -100
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+
+    # Test first run
+    past_bot_scores = get_past_bot_scores([])
+    assert score_within_confidence_interval(bot_eval, past_bot_scores)
+
+    # Don't fail if bot score is nan
+    past_bot_scores = get_past_bot_scores([math.nan])
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+
+    # Fail fuzz
+    bot_eval.prob_def.acceptable_score_deviation = 0.4
+    if fuzz_score_within_ci(bot_eval):
+        raise RuntimeError(
+            f'Fuzz fail failed bot_eval {bot_eval.to_json(indent=2)}')
+
+    # Pass fuzz
+    bot_eval.prob_def.acceptable_score_deviation = 0.6
+    if not fuzz_score_within_ci(bot_eval):
+        raise RuntimeError(
+            f'Fuzz failed bot_eval {bot_eval.to_json(indent=2)}')
+
+def fuzz_score_within_ci(bot_eval):
+    for _ in range(50):
+        past_bot_scores = get_past_bot_scores(
+            [random() for _ in range(10 ** 3)])
+        bot_eval.results.score = random()
+        if not score_within_confidence_interval(bot_eval, past_bot_scores):
+            return False
+    else:
+        return True
+
+
+def get_past_bot_scores(past_scores):
+    past_bot_scores = dbox()
+    past_bot_scores.scores = [Box(score=s) for s in past_scores]
+    past_bot_scores.mean = statistics.mean(past_scores) if past_scores else None
+    return past_bot_scores
 
 
 def bot_eval_helper():
