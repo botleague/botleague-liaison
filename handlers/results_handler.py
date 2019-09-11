@@ -104,7 +104,7 @@ def save_to_bot_scores(eval_data, eval_key, score):
                         f'{new_bot_scores.to_json(indent=2, default=str)}')
 
 
-def handle_problem_ci(db: DB, eval_data: Box) -> bool:
+def handle_problem_ci(db: DB, eval_data: Box) -> Tuple[bool, bool]:
     """
     Check to see if PR is a problem CI and merge iff this is the last bot
     :return: Whether we should merge or not
@@ -113,8 +113,10 @@ def handle_problem_ci(db: DB, eval_data: Box) -> bool:
     problem_ci_db_key = get_problem_ci_db_key(pr.number, pr.head_commit)
     problem_ci = db.get(problem_ci_db_key)
     if not problem_ci:
+        is_problem_ci = False
         should_merge = True
     else:
+        is_problem_ci = True
         def reduce():
             # Refetch all bots in case scores came in after initial request
             for bot_eval_key in problem_ci.bot_eval_keys:
@@ -134,7 +136,7 @@ def handle_problem_ci(db: DB, eval_data: Box) -> bool:
             should_merge = True
         else:
             should_merge = False
-    return should_merge
+    return is_problem_ci, should_merge
 
 
 def score_within_confidence_interval(bot_eval: Box,
