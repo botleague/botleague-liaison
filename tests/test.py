@@ -21,7 +21,7 @@ from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
 from botleague_helpers.config import activate_test_mode, blconfig
 
 from tests.mockable import Mockable
-from utils import get_liaison_db_store, dbox
+from utils import get_liaison_db_store, dbox, generate_rand_alphanumeric
 
 activate_test_mode()  # So don't import this module from non-test code!
 
@@ -56,7 +56,7 @@ def test_db_invalid_key_handler():
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
     try:
-        error, results, eval_data, gist = process_results(payload, db)
+        error, results, eval_data, gist, _ = process_results(payload, db)
     except RuntimeError as e:
         assert INVALID_DB_KEY_STATE_MESSAGE == str(e)
     else:
@@ -69,7 +69,7 @@ def test_results_handler():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, db)
+    error, results, eval_data, gist, _ = process_results(payload, db)
     assert not error
     assert 'finished' in results
     assert 'started' in results
@@ -85,7 +85,7 @@ def test_results_handler_server_error():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, db)
+    error, results, eval_data, gist, _ = process_results(payload, db)
     assert error
     assert error.http_status_code == 500
     assert 'finished' in results
@@ -102,7 +102,7 @@ def test_results_handler_not_confirmed():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, db)
+    error, results, eval_data, gist, _ = process_results(payload, db)
     assert error
     assert error.http_status_code == 400
     assert 'finished' in results
@@ -114,7 +114,7 @@ def test_results_handler_already_complete():
     db_key = get_eval_db_key(payload.eval_key)
     eval_data = Mockable.read_test_box('eval_data.json')
     db.set(db_key, eval_data)
-    error, results, eval_data, gist = process_results(payload, db)
+    error, results, eval_data, gist, _ = process_results(payload, db)
     assert error
     assert error.http_status_code == 400
     assert 'finished' in results
@@ -179,7 +179,7 @@ def test_score_within_confidence_interval():
             f'Fuzz failed bot_eval {bot_eval.to_json(indent=2)}')
 
 def fuzz_score_within_ci(bot_eval):
-    for _ in range(50):
+    for _ in range(30):
         past_bot_scores = get_past_bot_scores(
             [random() for _ in range(10 ** 3)])
         bot_eval.results.score = random()
@@ -191,7 +191,9 @@ def fuzz_score_within_ci(bot_eval):
 
 def get_past_bot_scores(past_scores):
     past_bot_scores = dbox()
-    past_bot_scores.scores = [Box(score=s) for s in past_scores]
+    def get_score(s):
+        return Box(score=s, eval_key=generate_rand_alphanumeric(12))
+    past_bot_scores.scores = [get_score(s) for s in past_scores]
     past_bot_scores.mean = statistics.mean(past_scores) if past_scores else None
     return past_bot_scores
 

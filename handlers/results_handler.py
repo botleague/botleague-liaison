@@ -271,13 +271,14 @@ def post_results_to_gist(db, results) -> Optional[github.Gist.Gist]:
 
 
 def process_results(result_payload: Box,
-                    db: DB) -> Tuple[Error, Box, Box, Optional[str]]:
+                    db: DB) -> Tuple[Error, Box, Box, Optional[str], bool]:
     eval_key = result_payload.get('eval_key', '')
     results = result_payload.get('results', Box())
     results.finished = time.time()
     error = Error()
     eval_data = Box()
     gist = None
+    should_skip = False
     if not eval_key:
         error.http_status_code = 400
         error.message = 'eval_key must be in JSON data payload'
@@ -286,6 +287,10 @@ def process_results(result_payload: Box,
         if not eval_data:
             error.http_status_code = 400
             error.message = 'Could not find evaluation with that key'
+        elif eval_data.local_debug and constants.ON_GAE:
+            log.warning('Not processing results due to pull request body '
+                        'being set to LOCAL_DEBUG')
+            should_skip = True
         elif eval_data.status == constants.EVAL_STATUS_STARTED:
             error.http_status_code = 400
             error.message = 'This evaluation has not been confirmed'
@@ -307,7 +312,7 @@ def process_results(result_payload: Box,
             error.http_status_code = 400
             error.message = 'Eval data status unknown %s' % eval_data.status
 
-    return error, results, eval_data, gist
+    return error, results, eval_data, gist, should_skip
 
 
 def add_eval_data_to_results(eval_data: Box, results: Box):
