@@ -59,3 +59,10 @@ See Makefile
 
 In case of a fire, you may want to disable initiation of any evals. You can 
 do so by setting `DISABLE_GIT_HOOK_CONSUMPTION=true` in Firestore. 
+
+
+## Botleague submodule
+
+This is meant to be a readonly copy of botleague for more efficient 
+fetching of files without using the GitHub API. Checking it in is okay, but
+not necessary as the server will pull latest for things like problem ci's.
