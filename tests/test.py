@@ -53,7 +53,7 @@ def test_db_invalid_key_handler():
     payload = Mockable.read_test_box('request.json')
     db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
-    eval_data = Mockable.read_test_box('eval_data.json')
+    eval_data = get_test_eval_data()
     db.set(db_key, eval_data)
     try:
         error, results, eval_data, gist, _ = process_results(payload, db)
@@ -67,7 +67,7 @@ def test_results_handler():
     payload = Mockable.read_test_box('results_success.json')
     db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
-    eval_data = Mockable.read_test_box('eval_data.json')
+    eval_data = get_test_eval_data()
     db.set(db_key, eval_data)
     error, results, eval_data, gist, _ = process_results(payload, db)
     assert not error
@@ -79,11 +79,17 @@ def test_results_handler():
     assert results.problem == 'deepdrive/domain_randomization'
 
 
+def get_test_eval_data():
+    ret = Mockable.read_test_box('eval_data.json')
+    ret.local_debug = False
+    return ret
+
+
 def test_results_handler_server_error():
     payload = Mockable.read_test_box('results_error.json')
     db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
-    eval_data = Mockable.read_test_box('eval_data.json')
+    eval_data = get_test_eval_data()
     db.set(db_key, eval_data)
     error, results, eval_data, gist, _ = process_results(payload, db)
     assert error
@@ -100,7 +106,7 @@ def test_results_handler_not_confirmed():
     payload = Mockable.read_test_box('results_success.json')
     db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
-    eval_data = Mockable.read_test_box('eval_data.json')
+    eval_data = get_test_eval_data()
     db.set(db_key, eval_data)
     error, results, eval_data, gist, _ = process_results(payload, db)
     assert error
@@ -112,7 +118,7 @@ def test_results_handler_already_complete():
     payload = Mockable.read_test_box('results_success.json')
     db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
-    eval_data = Mockable.read_test_box('eval_data.json')
+    eval_data = get_test_eval_data()
     db.set(db_key, eval_data)
     error, results, eval_data, gist, _ = process_results(payload, db)
     assert error
@@ -124,7 +130,7 @@ def test_confirm_handler():
     payload = Mockable.read_test_box('request.json')
     db = get_liaison_db_store()
     db_key = get_eval_db_key(payload.eval_key)
-    eval_data = Mockable.read_test_box('eval_data.json')
+    eval_data = get_test_eval_data()
     db.set(db_key, eval_data)
     error, resp = process_confirm(payload, db)
     eval_data = get_eval_data(payload.eval_key, db)
