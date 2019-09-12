@@ -23,3 +23,6 @@ venv/
 
 # Jetbrains config
 .idea/
+
+.mypy_cache/
+.pytest_cache
