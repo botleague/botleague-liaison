@@ -1,12 +1,13 @@
 from botleague_helpers.db import DB
 from box import Box
+from loguru import logger as log
 
 import constants
 from models.eval_data import get_eval_data, save_eval_data
 from responses.error import Error
 from utils import get_liaison_db_store
 
-
+@log.catch(reraise=True)
 def handle_confirm_request(request):
     """
     Handles confirm POSTS from problem evaluators to ensure evaluation

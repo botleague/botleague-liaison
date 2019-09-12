@@ -68,6 +68,7 @@ class PayloadView(object):
         # do busy work...
         return 'nothing to push payload'  # or simple {}
 
+    @log.catch(reraise=True)
     @view_config(header='X-Github-Event:pull_request')
     def payload_pull_request(self):
         """This method is a continuation of PayloadView process, triggered if

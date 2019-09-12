@@ -25,7 +25,7 @@ from problem_ci import get_problem_ci_db_key
 from responses.error import Error
 from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox
 
-
+@log.catch(reraise=True)
 def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
     """
     Handles results POSTS from problem evaluators at the end of evaluation
