@@ -210,6 +210,8 @@ class PrProcessor(PrProcessorBase):
             description=msg,
             # target_url='https://botleague.io/users/username/botname/this-evaluation',
             context='Botleague')
+        log.success(f'Created status on pull request '
+                    f'{Box(status.raw_data).to_json(indent=2, default=str)}')
         return status
 
     @property
