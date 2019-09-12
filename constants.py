@@ -33,3 +33,5 @@ RENAME_PROBLEM_ERROR_MSG = 'Renaming problems currently not supported'
 BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME = 'BOTLEAGUE_RESULTS_GITHUB_TOKEN_encrypted'
 
 ON_GAE = 'GAE_APPLICATION' in os.environ
+
+HOST = 'https://liaison.botleague.io'
