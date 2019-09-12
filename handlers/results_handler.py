@@ -293,9 +293,10 @@ def process_results(result_payload: Box,
         if not eval_data:
             error.http_status_code = 400
             error.message = 'Could not find evaluation with that key'
-        elif eval_data.local_debug and constants.ON_GAE:
-            log.warning('Not processing results due to pull request body '
-                        'being set to LOCAL_DEBUG')
+        elif eval_data.botleague_liaison_host != constants.HOST and \
+                constants.ON_GAE:
+            log.warning('Not processing results due to botleague liaison '
+                        'host being overridden')
             should_skip = True
         elif eval_data.status == constants.EVAL_STATUS_STARTED:
             error.http_status_code = 400

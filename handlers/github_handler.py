@@ -3,7 +3,7 @@ from box import Box
 from pyramid.view import view_config, view_defaults
 
 from constants import ON_GAE
-from handlers.pr_handler import get_pr_processor, pr_is_local_debug
+from handlers.pr_handler import get_pr_processor, get_liaison_host_override
 from pyramid import httpexceptions
 from loguru import logger as log
 
@@ -80,7 +80,7 @@ class PayloadView(object):
             pr_event = Box(self.payload)
             pull_request = pr_event.pull_request
             pr_processor.pr_event = pr_event
-            if pr_is_local_debug(pull_request):
+            if get_liaison_host_override(pull_request) and ON_GAE:
                 log.warning(f'DEBUG local set on pull request '
                          f'{pr_event.to_json(indent=2)} '
                          f'Skipping!')

@@ -23,7 +23,8 @@ import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
 from utils import read_json, trigger_leaderboard_generation, \
-    get_liaison_db_store
+    get_liaison_db_store, is_json, dbox
+
 
 class PrProcessorBase:
     base_repo: github.Repository = None
@@ -32,7 +33,7 @@ class PrProcessorBase:
     pr_event: Box
     changed_files: List[Box] = None
     _github_client: github.Github = None
-    local_debug = None
+    liaison_host_override: str = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # Support multiple inheritance
@@ -47,7 +48,7 @@ class PrProcessorBase:
         base_repo_name = pull_request.base.repo.full_name
         self.base_repo = self.get_repo(base_repo_name)
         self.pull_number = pull_request.number
-        self.local_debug = pr_is_local_debug(pull_request)
+        self.liaison_host_override = get_liaison_host_override(pull_request)
 
         # Get all the changed files in a pull request
         self.changed_files: List[Box] = self.get_changed_files()
@@ -122,7 +123,7 @@ class PrProcessorBase:
                 changed_filetypes=changed_filetypes,
                 from_mock=self.is_mock,
                 github_client=self.github_client,
-                local_debug=self.local_debug,)
+                botleague_liaison_host=self.liaison_host_override,)
         elif base_dirs == [constants.PROBLEMS_DIR]:
             # If this is an existing problem, trigger a problem rerun
             # If it's a new problem, just return should_gen
@@ -137,7 +138,7 @@ class PrProcessorBase:
                 changed_filetypes=changed_filetypes,
                 from_mock=self.is_mock,
                 github_client=self.github_client,
-                local_debug=self.local_debug,)
+                botleague_liaison_host=self.liaison_host_override,)
         elif constants.BOTS_DIR in base_dirs or \
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
@@ -336,6 +337,10 @@ if __name__ == '__main__':
     pull_botleague()
 
 
-def pr_is_local_debug(pull_request):
-    return ON_GAE and pull_request.body == 'LOCAL_DEBUG'
+def get_liaison_host_override(pull_request):
+    if is_json(pull_request.body):
+        pr_opts = dbox(Box.from_json(pull_request.body))
+        return pr_opts.botleague_liaison_host or None
+    else:
+        return None
 

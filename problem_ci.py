@@ -21,7 +21,7 @@ def process_changed_problem(changed_problem_definitions,
                             changed_files, head_repo, pull_request,
                             user_dirs, changed_filetypes, from_mock,
                             github_client: github.Github,
-                            local_debug=False):
+                            botleague_liaison_host=None):
     should_gen = False
     if not changed_problem_definitions:
         resp = RegenPrResponse(
@@ -51,13 +51,14 @@ def process_changed_problem(changed_problem_definitions,
         else:
             resp = eval_bots(base_repo, bots_with_problem, changed_filenames,
                              changed_files, from_mock, github_client, head_repo,
-                             prob_def, problem_id, pull_request, local_debug)
+                             prob_def, problem_id, pull_request,
+                             botleague_liaison_host)
             if isinstance(resp, ProblemCIResponse):
                 problem_ci = Box(
                     pull_request=pull_request,
                     bot_eval_keys=[b.eval_key for b in resp.bot_evals],
                     prob_def=prob_def,
-                    local_debug=local_debug,
+                    botleague_liaison_host=botleague_liaison_host,
                     created_at=SERVER_TIMESTAMP)
                 db = get_liaison_db_store()
                 db_key = get_problem_ci_db_key(
@@ -78,7 +79,7 @@ def get_problem_ci_db_key(pull_number, pull_head_commit):
 
 def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
               from_mock, github_client, head_repo, prob_def, problem_id,
-              pull_request, local_debug=False) \
+              pull_request, botleague_liaison_host) \
         -> Union[ProblemCIResponse, EvalErrorPrResponse]:
     bot_evals = []
 
@@ -97,7 +98,7 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
             head_repo=head_repo,
             pull_request=pull_request,
             github_client=github_client,
-            local_debug=local_debug)
+            botleague_liaison_host=botleague_liaison_host)
         trigger_resp = bot_eval.trigger_single_eval(
             bot_def=bot, problem_def=prob_def, problem_id=problem_id)
         if isinstance(trigger_resp, EvalStartedPrResponse):

@@ -30,12 +30,12 @@ class BotEvalBase:
     pr_event: Box
     seed: int
     github_client: github.Github
-    local_debug: bool
+    botleague_liaison_host: str
 
     def __init__(self, botname, changed_filenames, changed_files,
                  user_or_org_dir, base_repo,
                  head_repo, pull_request, github_client,
-                 local_debug=False):
+                 botleague_liaison_host=None):
         super().__init__()  # Support multiple inheritance
         self.botname = botname
         self.changed_filenames: List[str] = changed_filenames
@@ -47,7 +47,7 @@ class BotEvalBase:
         self.league_commit_user = self.pr_event.user.login.lower()
         self.seed = random.choice(range(1, 10 ** 6))
         self.github_client = github_client
-        self.local_debug = local_debug
+        self.botleague_liaison_host = botleague_liaison_host or constants.HOST
 
     def eval(self) -> Union[PrResponse, List[PrResponse]]:
         bot_def_filenames = []
@@ -175,7 +175,7 @@ class BotEvalBase:
                         started_at=SERVER_TIMESTAMP,
                         source_commit=bot_def.source_commit,
                         league_commit_sha=head_commit,
-                        local_debug=self.local_debug,
+                        botleague_liaison_host=self.botleague_liaison_host,
                         pull_request=dict(
                             url=pull_url,
                             number=pull_number,
@@ -185,7 +185,7 @@ class BotEvalBase:
                             head_full_name=head_full_name,
                             base_commit=base_commit,
                             base_full_name=base_full_name,
-                        ),)
+                        ), )
         return eval_data
 
     @staticmethod
@@ -295,7 +295,7 @@ def process_changed_bot(
         base_repo, botname_dirs, changed_filenames,
         changed_files, head_repo, pull_request,
         user_dirs, changed_filetypes, from_mock,
-        github_client: github.Github, local_debug=False) -> \
+        github_client: github.Github, botleague_liaison_host) -> \
         Tuple[Union[PrResponse, List[PrResponse]], bool]:
     should_gen_leaderboard = False
     user_dirs = list(user_dirs)
@@ -325,7 +325,7 @@ def process_changed_bot(
                 head_repo=head_repo,
                 pull_request=pull_request,
                 github_client=github_client,
-                local_debug=local_debug)
+                botleague_liaison_host=botleague_liaison_host)
             resp = evaluator.eval()
     return resp, should_gen_leaderboard
 

@@ -81,7 +81,7 @@ def test_results_handler():
 
 def get_test_eval_data():
     ret = Mockable.read_test_box('eval_data.json')
-    ret.local_debug = False
+    ret.botleague_liaison_host = constants.HOST
     return ret
 
 
