@@ -60,8 +60,12 @@ def save_results(db, error, eval_data, gist, results):
         log.warning('Problem CI failed, not saving to bots official scores '
                     'as this is likely an issue with the new '
                     'version of the problem.')
-    else:
+    elif not is_problem_ci:
         save_to_bot_scores(eval_data, eval_data.eval_key,  results.score)
+    else:
+        # TODO: Query eval_data to get all scores here since this
+        #   will only be called once per problem CI
+        pass
 
     # TODO: Save aggregate problem scores?
 
