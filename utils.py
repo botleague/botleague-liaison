@@ -107,5 +107,12 @@ def dbox(obj=None):
     obj = obj or {}
     return Box(obj, default_box=True)
 
+
+def is_json(string: str):
+    try:
+        json.loads(string)
+    except ValueError:
+        return False
+    return True
 # if __name__ == '__main__':
 #     trigger_leaderboard_generation()
