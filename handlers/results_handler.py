@@ -128,6 +128,8 @@ def handle_problem_ci(db: DB, eval_data: Box) -> Tuple[bool, bool]:
                 past_bot_scores = get_scores_db().get(get_scores_id(bot_eval))
                 if not score_within_confidence_interval(bot_eval,
                                                         past_bot_scores):
+                    log.error('Score for bot not within confidence interval, '
+                              'problem CI failed')
                     return False
             else:
                 return True
