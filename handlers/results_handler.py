@@ -42,30 +42,27 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
 
 def save_results(db, error, eval_data, gist, results):
     eval_data.status = constants.EVAL_STATUS_COMPLETE
-    eval_data.results = Box(
-        gist=gist,
-        error=error,
-        results=results, )
+    eval_data.gist = gist
+    eval_data.error = error
+    eval_data.results = results
     eval_data.results_at = SERVER_TIMESTAMP
     save_eval_data(eval_data, db)
-    update_pr_status(error, eval_data, results, gist)
 
     # Handle problem ci before saving bot scores as we want to compare the
     # new bot scores to the previous
-    is_problem_ci, should_merge = handle_problem_ci(db, eval_data)
+    problem_ci, should_merge, ci_error = check_for_problem_ci(db, eval_data)
 
     # If problem_ci fails, don't save bot score
 
-    if is_problem_ci and not should_merge:
-        log.warning('Problem CI failed, not saving to bots official scores '
-                    'as this is likely an issue with the new '
-                    'version of the problem.')
-    elif not is_problem_ci:
-        save_to_bot_scores(eval_data, eval_data.eval_key,  results.score)
+    if problem_ci:
+        save_problem_ci_results(ci_error, db, error, eval_data, gist,
+                                problem_ci, results, should_merge)
     else:
-        # TODO: Query eval_data to get all scores here since this
-        #   will only be called once per problem CI
-        pass
+        # Just a normal bot eval
+        update_pr_status(error, eval_data, results, gist)
+        save_to_bot_scores(
+            eval_data, eval_data.eval_key,
+            Box(score=results.score, eval_key=eval_data.eval_key))
 
     # TODO: Save aggregate problem scores?
 
@@ -76,7 +73,27 @@ def save_results(db, error, eval_data, gist, results):
     return error
 
 
-def save_to_bot_scores(eval_data, eval_key, score):
+def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
+                            results, should_merge):
+    if not should_merge:
+        if not ci_error:
+            log.info('Problem CI not yet finished')
+        else:
+            log.warning('Problem CI failed, not saving to bots '
+                        'official scores as this is likely an issue '
+                        'with the new version of the problem.')
+    else:
+        # Get all bot_evals for problem ci and call save_to_bot_scores
+        for bot_eval_key in problem_ci.bot_eval_keys:
+            bot_eval = db.get(get_eval_db_key(bot_eval_key))
+            save_to_bot_scores(
+                bot_eval, bot_eval.eval_key,
+                Box(score=bot_eval.results.score,
+                    eval_key=eval_data.eval_key))
+        update_pr_status(error, eval_data, results, gist)
+
+
+def save_to_bot_scores(eval_data, eval_key, new_score: Box):
     db = get_scores_db()
     score_id = get_scores_id(eval_data)
     orig = db.get(score_id)
@@ -84,7 +101,7 @@ def save_to_bot_scores(eval_data, eval_key, score):
     recorded = bot_scores and \
                any([b.eval_key == eval_key for b in bot_scores.scores])
     if not recorded:
-        bot_scores.scores.append(score)
+        bot_scores.scores.append(new_score)
         score_values = [s.score for s in bot_scores.scores]
         if len(bot_scores) < 2:
             score_stdev = None
@@ -102,13 +119,13 @@ def save_to_bot_scores(eval_data, eval_key, score):
             new_bot_scores.created_at = SERVER_TIMESTAMP
         if not db.cas(score_id, orig, new_bot_scores):
             log.warning('Race condition saving bot scores! Trying again.')
-            save_to_bot_scores(eval_data, eval_key, score)
+            save_to_bot_scores(eval_data, eval_key, new_score)
         else:
             log.success(f'Saved new bot scores '
                         f'{new_bot_scores.to_json(indent=2, default=str)}')
 
 
-def handle_problem_ci(db: DB, eval_data: Box) -> Tuple[bool, bool]:
+def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
     """
     Check to see if PR is a problem CI and merge iff this is the last bot
     :return: Whether we should merge or not
@@ -116,22 +133,28 @@ def handle_problem_ci(db: DB, eval_data: Box) -> Tuple[bool, bool]:
     pr = eval_data.pull_request
     problem_ci_db_key = get_problem_ci_db_key(pr.number, pr.head_commit)
     problem_ci = db.get(problem_ci_db_key)
+    error = ''
     if not problem_ci:
-        is_problem_ci = False
         should_merge = True
     else:
-        is_problem_ci = True
         def reduce():
             # Refetch all bots in case scores came in after initial request
             for bot_eval_key in problem_ci.bot_eval_keys:
                 bot_eval = db.get(get_eval_db_key(bot_eval_key))
                 past_bot_scores = get_scores_db().get(get_scores_id(bot_eval))
+                log.info(f'Checking confidence interval for bot_eval '
+                         f'{box2json(bot_eval)}\n'
+                         f'past scores: {box2json(past_bot_scores)}')
                 if not score_within_confidence_interval(bot_eval,
                                                         past_bot_scores):
-                    log.error('Score for bot not within confidence interval, '
-                              'problem CI failed')
+                    global error
+                    error = 'Score for bot not within confidence interval, ' \
+                            'problem CI failed'
+                    log.error(error)
                     return False
             else:
+                log.success('Score for bot within confidence interval, '
+                          'problem CI successful!')
                 return True
 
         reduce_result = try_reduce_async(
@@ -142,7 +165,7 @@ def handle_problem_ci(db: DB, eval_data: Box) -> Tuple[bool, bool]:
             should_merge = True
         else:
             should_merge = False
-    return is_problem_ci, should_merge
+    return problem_ci, should_merge, error
 
 
 def score_within_confidence_interval(bot_eval: Box,
@@ -171,9 +194,9 @@ def score_within_confidence_interval(bot_eval: Box,
         log.warning('Score already recorded, this should not happen!')
         return True
     score = bot_eval.results.score
-    acceptable_score_deviation = bot_eval.prob_def.acceptable_score_deviation
+    acceptable_score_deviation = bot_eval.problem_def.acceptable_score_deviation
     if not past_bot_scores.scores:
-        # If no previous scores, then we're good
+        # If no previous scores, then we are the mean of the CI
         return True
     score_values = [b.score for b in past_bot_scores.scores]
     multiplier = {
@@ -201,9 +224,12 @@ def get_bots_done_fn(db, bot_eval_keys) -> callable:
     def bots_done():
         for bot_eval_key in bot_eval_keys:
             bot = db.get(get_eval_db_key(bot_eval_key))
+            log.info(f'Checking if bot is done... bot: {box2json(bot)}')
             if bot.status != constants.EVAL_STATUS_COMPLETE:
+                log.info('Bot not done')
                 return False
         else:
+            log.info('All bots done!')
             return True
     return bots_done
 

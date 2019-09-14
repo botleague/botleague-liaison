@@ -114,5 +114,10 @@ def is_json(string: str):
     except ValueError:
         return False
     return True
+
+
+def box2json(box: Box):
+    return box.to_json(indent=2, default=str)
+
 # if __name__ == '__main__':
 #     trigger_leaderboard_generation()
