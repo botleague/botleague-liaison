@@ -88,15 +88,17 @@ def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
             problem_ci.status = PROBLEM_CI_STATUS_FAILED
             problem_ci.error = ci_error
     else:
-        # Get all bot_evals for problem ci and call save_to_bot_scores
+        # Aggregate data from bot evals now that they're done
+        gists = BoxList()
         for bot_eval_key in problem_ci.bot_eval_keys:
             bot_eval = db.get(get_eval_db_key(bot_eval_key))
             save_to_bot_scores(
                 bot_eval, bot_eval.eval_key,
                 Box(score=bot_eval.results.score,
-                    eval_key=eval_data.eval_key))
-        # TODO: Save a gist with all bots gists in the DB
-        update_pr_status(error, eval_data, results, gist)
+                    eval_key=bot_eval.eval_key))
+            gists.append(bot_eval.gist)
+        problem_ci.gists = gists
+        update_pr_status_problem_ci(error, problem_ci, eval_data)
         problem_ci.status = PROBLEM_CI_STATUS_PASSED
     db.set(problem_ci.id, problem_ci)
 
@@ -242,6 +244,27 @@ def get_bots_done_fn(db, bot_eval_keys) -> callable:
             log.info('All bots done!')
             return True
     return bots_done
+
+
+def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
+    if error:
+        pr_msg = error
+        pr_status = constants.CI_STATUS_ERROR
+    else:
+        pr_msg = 'Evaluation complete'
+        pr_status = constants.CI_STATUS_SUCCESS
+    league_repo = github.Github(blconfig.github_token).get_repo(
+        eval_data.pull_request.base_full_name)
+    league_commit = league_repo.get_commit(
+        sha=eval_data.pull_request.head_commit)
+    # status can be error, failure, pending, or success
+    status = league_commit.create_status(
+        pr_status,
+        description=pr_msg,
+        target_url=f'{constants.HOST}/problem_ci_status?id={problem_ci.id}',
+        context='Botleague')
+    log.info(f'Updated PR status {status}')
+    return status
 
 
 def update_pr_status(error, eval_data, results, gist):

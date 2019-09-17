@@ -117,7 +117,7 @@ with Configurator() as config:
     config.add_route(name='problem_ci_status', pattern='/problem_ci_status')
     config.add_view(view=handle_problem_ci_status,
                     route_name='problem_ci_status', renderer='json',
-                    request_method='POST')
+                    request_method=('GET', 'POST'))
 
     config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation
