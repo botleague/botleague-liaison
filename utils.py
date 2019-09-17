@@ -103,8 +103,11 @@ def get_liaison_db_store():
     return ret
 
 
-def dbox(obj=None):
-    obj = obj or {}
+def dbox(obj=None, **kwargs):
+    if kwargs:
+        obj = dict(kwargs)
+    else:
+        obj = obj or {}
     return Box(obj, default_box=True)
 
 
