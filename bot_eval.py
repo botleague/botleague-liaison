@@ -152,7 +152,7 @@ class BotEvalBase:
 
     def get_eval_data(self, eval_id, eval_key, problem_id, bot_def,
                       problem_def) -> Box:
-        # TODO: Move this to models/eval_data
+        # TODO: Move this to models/eval_data and use an object instead of a box
         pull_number = self.pr_event.number
         pull_url = self.pr_event.url
         pull_request_updated_at = self.pr_event.updated_at
