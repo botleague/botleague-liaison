@@ -5,14 +5,14 @@ class Error(Box):
     message: str
     http_status_code: int
 
-    def __init__(self, http_status_code: int = 200, message: str = '', *args,
+    def __init__(self, http_status_code: int = 500, message: str = '', *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.http_status_code = http_status_code
         self.message = message
 
     def __bool__(self):
-        if self.message or self.http_status_code != 200:
+        if self.message:
             return True
         else:
             return False

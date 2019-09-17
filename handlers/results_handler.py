@@ -1,6 +1,7 @@
 import math
 import sys
 import time
+from copy import deepcopy
 from statistics import mean, median, stdev
 
 from botleague_helpers.crypto import decrypt_symmetric
@@ -21,9 +22,11 @@ from handlers.pr_handler import PrProcessor
 from models.eval_data import get_eval_data, save_eval_data
 from loguru import logger as log
 
-from problem_ci import get_problem_ci_db_key
+from problem_ci import get_problem_ci_db_id, PROBLEM_CI_STATUS_FAILED, \
+    PROBLEM_CI_STATUS_PASSED
 from responses.error import Error
-from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox
+from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox, \
+    box2json
 
 @log.catch(reraise=True)
 def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
@@ -82,6 +85,8 @@ def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
             log.warning('Problem CI failed, not saving to bots '
                         'official scores as this is likely an issue '
                         'with the new version of the problem.')
+            problem_ci.status = PROBLEM_CI_STATUS_FAILED
+            problem_ci.error = ci_error
     else:
         # Get all bot_evals for problem ci and call save_to_bot_scores
         for bot_eval_key in problem_ci.bot_eval_keys:
@@ -90,8 +95,10 @@ def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
                 bot_eval, bot_eval.eval_key,
                 Box(score=bot_eval.results.score,
                     eval_key=eval_data.eval_key))
+        # TODO: Save a gist with all bots gists in the DB
         update_pr_status(error, eval_data, results, gist)
-
+        problem_ci.status = PROBLEM_CI_STATUS_PASSED
+    db.set(problem_ci.id, problem_ci)
 
 def save_to_bot_scores(eval_data, eval_key, new_score: Box):
     db = get_scores_db()
@@ -131,7 +138,7 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
     :return: Whether we should merge or not
     """
     pr = eval_data.pull_request
-    problem_ci_db_key = get_problem_ci_db_key(pr.number, pr.head_commit)
+    problem_ci_db_key = get_problem_ci_db_id(pr.number, pr.head_commit)
     problem_ci = db.get(problem_ci_db_key)
     error = ''
     if not problem_ci:
@@ -142,14 +149,17 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
             for bot_eval_key in problem_ci.bot_eval_keys:
                 bot_eval = db.get(get_eval_db_key(bot_eval_key))
                 past_bot_scores = get_scores_db().get(get_scores_id(bot_eval))
+                bot_eval_no_eval_key = deepcopy(bot_eval)
+                del bot_eval_no_eval_key['eval_key']
                 log.info(f'Checking confidence interval for bot_eval '
                          f'{box2json(bot_eval)}\n'
                          f'past scores: {box2json(past_bot_scores)}')
                 if not score_within_confidence_interval(bot_eval,
                                                         past_bot_scores):
                     global error
-                    error = 'Score for bot not within confidence interval, ' \
-                            'problem CI failed'
+                    error = f'Score for bot not within confidence interval, ' \
+                            f'problem CI failed: ' \
+                            f'bot details {box2json(bot_eval_no_eval_key)}'
                     log.error(error)
                     return False
             else:
@@ -177,7 +187,7 @@ def score_within_confidence_interval(bot_eval: Box,
     double the acceptable range, since we could
     have gone from min to max.
     Also, follow the 2-sided CI for a t-student distribution
-    that gives 2x the acceptable_score_deviation with infinite
+    that gives ~2x the acceptable_score_deviation with infinite
     samples (i.e. ± acceptable_score_deviation)
     https://en.wikipedia.org/wiki/Student%27s_t-distribution#Table_of_selected_values
     https://stats.stackexchange.com/a/230185/18187
@@ -240,8 +250,6 @@ def update_pr_status(error, eval_data, results, gist):
         pr_msg = error
         pr_status = constants.CI_STATUS_ERROR
     else:
-        # TODO: Fan in all problem evals and set pending until they are all
-        #   successful
         pr_msg = 'Evaluation complete'
         pr_status = constants.CI_STATUS_SUCCESS
     repo = github.Github(blconfig.github_token).get_repo(

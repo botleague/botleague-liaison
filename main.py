@@ -17,6 +17,7 @@ from pyramid.response import Response
 import github
 from github import Github
 
+from handlers.problem_ci_status_handler import handle_problem_ci_status_request
 from handlers.results_handler import handle_results_request
 from handlers import github_handler
 
@@ -24,7 +25,6 @@ from handlers import github_handler
 
 # TODO(Challenges): Allow private docker and github repos that grant access to
 #  special botleague user. Related: https://docs.google.com/document/d/1IOMMtfEVaPWFPg8pEqPOPbLO__bs9_SCmA8_GbfGBTU/edit#
-
 
 def diagnostics(request):
     tok = blconfig.github_token
@@ -50,13 +50,23 @@ def handle_results(request):
     return resp
 
 
+def handle_problem_ci_status(request):
+    start = time.time()
+    body, error = handle_problem_ci_status_request(request)
+    resp = Response(json=body.to_dict())
+    if error:
+        resp.status_code = error.http_status_code
+    log.info(f'Problem CI status request took {time.time() - start} seconds')
+    return resp
+
+
 def handle_confirm(request):
     start = time.time()
     body, error = handle_confirm_request(request)
     resp = Response(json=body.to_dict())
     if error:
         resp.status_code = error.http_status_code
-    log.info(f'Confirm response took {time.time() - start} seconds')
+    log.info(f'Confirm request took {time.time() - start} seconds')
     return resp
 
 
@@ -69,9 +79,9 @@ def handle_adhoc():
     repo_name = 'botleague/botleague'
     commit_sha = 'ff075f40afe1e2545ee6cb8e029dc78c83b9f740'
 
-    github_client = Github(blconfig.github_token)
-
-    github.enable_console_debug_logging()
+    # github_client = Github(blconfig.github_token)
+    #
+    # github.enable_console_debug_logging()
 
 
     # org = github_client.get_organization('deepdrive')
@@ -102,6 +112,11 @@ with Configurator() as config:
 
     config.add_route(name='results', pattern='/results')
     config.add_view(view=handle_results, route_name='results', renderer='json',
+                    request_method='POST')
+
+    config.add_route(name='problem_ci_status', pattern='/problem_ci_status')
+    config.add_view(view=handle_problem_ci_status,
+                    route_name='problem_ci_status', renderer='json',
                     request_method='POST')
 
     config.add_route(name='github_payload', pattern='/github_payload')

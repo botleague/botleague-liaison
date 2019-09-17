@@ -15,6 +15,10 @@ from responses.pr_responses import RegenPrResponse, ErrorPrResponse, \
 from constants import BOTLEAGUE_REPO_ROOT, ONGOING_PROBLEM_CI_KEY_PREFIX
 from utils import read_box, get_liaison_db_store
 
+PROBLEM_CI_STATUS_PENDING = 'pending'
+PROBLEM_CI_STATUS_FAILED = 'failed'
+PROBLEM_CI_STATUS_PASSED = 'passed'
+
 
 def process_changed_problem(changed_problem_definitions,
                             base_repo, changed_filenames,
@@ -54,23 +58,25 @@ def process_changed_problem(changed_problem_definitions,
                              prob_def, problem_id, pull_request,
                              botleague_liaison_host)
             if isinstance(resp, ProblemCIResponse):
+                pci_id = get_problem_ci_db_id(
+                    pull_number=pull_request.number,
+                    pull_head_commit=pull_request.head.sha[:6])
                 problem_ci = Box(
+                    id=pci_id,
                     pull_request=pull_request,
                     bot_eval_keys=[b.eval_key for b in resp.bot_evals],
                     prob_def=prob_def,
                     botleague_liaison_host=botleague_liaison_host,
-                    created_at=SERVER_TIMESTAMP)
+                    created_at=SERVER_TIMESTAMP,
+                    status=PROBLEM_CI_STATUS_PENDING,)
                 db = get_liaison_db_store()
-                db_key = get_problem_ci_db_key(
-                    pull_number=pull_request.number,
-                    pull_head_commit=pull_request.head.sha[:6])
-                db.set(db_key, problem_ci)
-                log.success(f'Started problem ci: {db_key}')
+                db.set(pci_id, problem_ci)
+                log.success(f'Started problem ci: {pci_id}')
 
     return resp, should_gen
 
 
-def get_problem_ci_db_key(pull_number, pull_head_commit):
+def get_problem_ci_db_id(pull_number, pull_head_commit):
     ret = f'{ONGOING_PROBLEM_CI_KEY_PREFIX}_' \
           f'PR:{pull_number}-' \
           f'sha:{pull_head_commit[:6]}'
@@ -84,7 +90,7 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
     bot_evals = []
 
     # Create the reduce record that we will use to fan in results
-    create_reduce(get_problem_ci_db_key(
+    create_reduce(get_problem_ci_db_id(
                     pull_number=pull_request.number,
                     pull_head_commit=pull_request.head.sha[:6]))
 
