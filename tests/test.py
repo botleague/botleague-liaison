@@ -141,7 +141,7 @@ def test_confirm_handler():
 
 def test_score_within_confidence_interval():
     bot_eval = dbox()
-    bot_eval.prob_def.acceptable_score_deviation = 100
+    bot_eval.problem_def.acceptable_score_deviation = 100
 
     bot_eval.results.score = 300
     past_bot_scores = get_past_bot_scores([10, 100])
@@ -173,13 +173,13 @@ def test_score_within_confidence_interval():
     assert not score_within_confidence_interval(bot_eval, past_bot_scores)
 
     # Fail fuzz
-    bot_eval.prob_def.acceptable_score_deviation = 0.4
+    bot_eval.problem_def.acceptable_score_deviation = 0.4
     if fuzz_score_within_ci(bot_eval):
         raise RuntimeError(
             f'Fuzz fail failed bot_eval {bot_eval.to_json(indent=2)}')
 
     # Pass fuzz
-    bot_eval.prob_def.acceptable_score_deviation = 0.6
+    bot_eval.problem_def.acceptable_score_deviation = 0.6
     if not fuzz_score_within_ci(bot_eval):
         raise RuntimeError(
             f'Fuzz failed bot_eval {bot_eval.to_json(indent=2)}')
