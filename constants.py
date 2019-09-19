@@ -2,7 +2,7 @@ import os
 from os.path import dirname, join, realpath
 
 ROOT_DIR = dirname(realpath(__file__))
-BOTLEAGUE_REPO_ROOT = join(ROOT_DIR, 'botleague')
+BOTLEAGUE_REPO_ROOT = join('/tmp', 'botleague')
 
 BOTS_DIR = 'bots'
 PROBLEMS_DIR = 'problems'

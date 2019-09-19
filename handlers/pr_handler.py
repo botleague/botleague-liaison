@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from os.path import join
 from typing import List, Union, Tuple
@@ -174,10 +175,11 @@ class PrProcessorBase:
 
 
 def pull_botleague():
-    porcelain.pull(
-        constants.BOTLEAGUE_REPO_ROOT,
-        remote_location='https://github.com/botleague/botleague',
-        refspecs=b'refs/heads/master',)
+    src = 'https://github.com/botleague/botleague'
+    dst = constants.BOTLEAGUE_REPO_ROOT
+    if not os.path.exists(constants.BOTLEAGUE_REPO_ROOT):
+        porcelain.clone(src, dst)
+    porcelain.pull(dst, remote_location=src, refspecs=b'refs/heads/master',)
 
 
 class PrProcessor(PrProcessorBase):
