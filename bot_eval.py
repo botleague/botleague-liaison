@@ -133,8 +133,11 @@ class BotEvalBase:
         return responses
 
     def trigger_single_eval(self, bot_def, problem_def,
-                            problem_id) -> PrResponse:
+                            problem_id,
+                            problem_ci_replace_sim_url=None) -> PrResponse:
         endpoint = problem_def.endpoint
+        if problem_ci_replace_sim_url:
+            problem_def.problem_ci_replace_sim_url = problem_ci_replace_sim_url
         eval_key = generate_rand_alphanumeric(25)
         eval_id = generate_rand_alphanumeric(25)
         eval_data = self.get_eval_data(eval_id, eval_key, problem_id, bot_def,
