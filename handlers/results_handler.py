@@ -46,7 +46,8 @@ def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
 def save_results(db, error, eval_data, gist, results):
     eval_data.status = constants.EVAL_STATUS_COMPLETE
     eval_data.gist = gist
-    eval_data.error = error
+    if error:
+        eval_data.error = error
     eval_data.results = results
     eval_data.results_at = SERVER_TIMESTAMP
     save_eval_data(eval_data, db)
@@ -362,12 +363,13 @@ def process_results(result_payload: Box,
             error.http_status_code = 400
             error.message = 'This evaluation has already been processed'
         elif eval_data.status == constants.EVAL_STATUS_CONFIRMED:
-            if 'error' in result_payload:
-                error.http_status_code = 500
-                error.message = result_payload.error
-            elif 'results' not in result_payload:
+            if 'results' not in result_payload:
                 error.http_status_code = 400
                 error.message = 'No "results" found in request'
+            elif 'errors' in results:
+                error.http_status_code = 500
+                error.message = BoxList(results.errors).to_json(
+                    indent=2, default=str)
             add_eval_data_to_results(eval_data, results)
             gist = post_results_to_gist(db, results)
             gist = gist.html_url if gist else None
