@@ -18,8 +18,8 @@ def handle_problem_ci_status_request(request) -> Tuple[Box, Error]:
     db = get_liaison_db_store()
     error = Error()
     problem_ci = dbox(db.get(problem_ci_id))
-    body = Box(status=problem_ci.status,
+    body = Box(status=problem_ci.status or 'not-found',
                created_at=str(problem_ci.created_at),
-               gists=problem_ci.gists or [])
+               results_gists=problem_ci.gists or [])
     return body, error
 
