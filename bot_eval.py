@@ -217,6 +217,7 @@ class BotEval(BotEvalBase):
             if 'REPLACE_PROBLEM_HOST' in os.environ:
                 endpoint = os.environ['REPLACE_PROBLEM_HOST'] + \
                            endpoint[endpoint.find('/eval'):]
+            # TODO: Don't pass everything through to endpoint - i.e. cleanse
             serializable_data = json.loads(eval_data.to_json(default=str))
             endpoint_resp = requests.post(endpoint,
                                           json=serializable_data,
