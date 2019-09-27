@@ -81,13 +81,13 @@ class PrProcessorBase:
         if isinstance(resp, PrResponse):
             msg = resp.msg
             if isinstance(resp, ErrorPrResponse):
-                status = constants.CI_STATUS_ERROR
+                status = constants.PR_STATUS_ERROR
             elif isinstance(resp, StartedPrResponse):
-                status = constants.CI_STATUS_PENDING
+                status = constants.PR_STATUS_PENDING
             elif isinstance(resp, RegenPrResponse):
-                status = constants.CI_STATUS_SUCCESS
+                status = constants.PR_STATUS_SUCCESS
             elif isinstance(resp, IgnorePrResponse):
-                status = constants.CI_STATUS_SUCCESS
+                status = constants.PR_STATUS_SUCCESS
             else:
                 raise RuntimeError('Unexpected response type')
         elif isinstance(resp, list):
@@ -96,9 +96,9 @@ class PrProcessorBase:
             # Ensure they've all succeeded.
             msg = '\n'.join([r.msg for r in resp])
             if any(isinstance(r, EvalErrorPrResponse) for r in resp):
-                status = constants.CI_STATUS_ERROR
+                status = constants.PR_STATUS_ERROR
             elif all(isinstance(r, EvalStartedPrResponse) for r in resp):
-                status = constants.CI_STATUS_PENDING
+                status = constants.PR_STATUS_PENDING
             else:
                 raise RuntimeError('Unexpected type for eval response')
         else:

@@ -250,10 +250,10 @@ def get_bots_done_fn(db, bot_eval_keys) -> callable:
 def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
     if error:
         pr_msg = error
-        pr_status = constants.CI_STATUS_ERROR
+        pr_status = constants.PR_STATUS_ERROR
     else:
         pr_msg = 'Evaluation complete'
-        pr_status = constants.CI_STATUS_SUCCESS
+        pr_status = constants.PR_STATUS_SUCCESS
     league_repo = github.Github(blconfig.github_token).get_repo(
         eval_data.pull_request.base_full_name)
     league_commit = league_repo.get_commit(
@@ -272,10 +272,10 @@ def update_pr_status(error, eval_data, results, gist):
     if error:
         results.error = error
         pr_msg = error
-        pr_status = constants.CI_STATUS_ERROR
+        pr_status = constants.PR_STATUS_ERROR
     else:
         pr_msg = 'Evaluation complete'
-        pr_status = constants.CI_STATUS_SUCCESS
+        pr_status = constants.PR_STATUS_SUCCESS
     repo = github.Github(blconfig.github_token).get_repo(
         eval_data.pull_request.base_full_name)
     commit = repo.get_commit(sha=eval_data.pull_request.head_commit)
