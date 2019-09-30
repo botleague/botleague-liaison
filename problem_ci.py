@@ -6,7 +6,7 @@ import github
 from botleague_helpers.reduce import create_reduce
 from box import Box
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
-from loguru import logger as log
+from logs import log
 
 from bot_eval import get_bot_eval
 from responses.pr_responses import RegenPrResponse, ErrorPrResponse, \

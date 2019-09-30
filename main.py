@@ -6,7 +6,7 @@ from wsgiref.simple_server import make_server
 
 from botleague_helpers.config import blconfig
 from box import Box
-from loguru import logger as log
+from logs import log
 
 from constants import ON_GAE
 from handlers.confirm_handler import handle_confirm_request

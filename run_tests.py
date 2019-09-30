@@ -1,7 +1,7 @@
 import sys
 
 from tests import test
-from loguru import logger as log
+from logs import log
 
 from botleague_helpers.config import activate_test_mode
 

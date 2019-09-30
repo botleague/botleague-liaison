@@ -4,7 +4,7 @@ import random
 import time
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from typing import List, Union, Tuple
-from loguru import logger as log
+from logs import log
 from box import Box, BoxList
 
 import constants

@@ -5,7 +5,7 @@ from typing import List, Union, Tuple
 
 from dulwich import porcelain
 from dulwich.repo import Repo
-from loguru import logger as log
+from logs import log
 
 import github.Repository
 import github.Organization

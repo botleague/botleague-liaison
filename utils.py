@@ -8,7 +8,7 @@ from box import Box
 
 import constants as c
 
-from loguru import logger as log
+from logs import log
 
 from github import UnknownObjectException
 

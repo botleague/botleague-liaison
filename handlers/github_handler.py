@@ -5,7 +5,7 @@ from pyramid.view import view_config, view_defaults
 from constants import ON_GAE
 from handlers.pr_handler import get_pr_processor, get_liaison_host_override
 from pyramid import httpexceptions
-from loguru import logger as log
+from logs import log
 
 from botleague_helpers.config import blconfig
 

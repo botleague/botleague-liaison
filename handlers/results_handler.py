@@ -20,7 +20,7 @@ from bot_eval import get_eval_db_key
 import constants
 from handlers.pr_handler import PrProcessor
 from models.eval_data import get_eval_data, save_eval_data
-from loguru import logger as log
+from logs import log
 
 from problem_ci import get_problem_ci_db_id, PROBLEM_CI_STATUS_FAILED, \
     PROBLEM_CI_STATUS_PASSED

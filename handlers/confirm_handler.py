@@ -1,6 +1,6 @@
 from botleague_helpers.db import DB
 from box import Box
-from loguru import logger as log
+from logs import log
 
 import constants
 from models.eval_data import get_eval_data, save_eval_data
