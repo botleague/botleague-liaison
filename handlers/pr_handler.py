@@ -1,6 +1,7 @@
 import os
 from io import BytesIO
 from os.path import join
+
 from typing import List, Union, Tuple
 
 from dulwich import porcelain
@@ -35,6 +36,7 @@ class PrProcessorBase:
     changed_files: List[Box] = None
     _github_client: github.Github = None
     liaison_host_override: str = None
+    replace_sim_url: str = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # Support multiple inheritance
@@ -42,17 +44,7 @@ class PrProcessorBase:
 
     def process_changes(self) -> \
             Tuple[Union[PrResponse, List[PrResponse]], str]:
-        pull_request = self.pr_event.pull_request
-        head = pull_request.head
-        head_repo_name = head.repo.full_name
-        self.head_repo = self.get_repo(head_repo_name)
-        base_repo_name = pull_request.base.repo.full_name
-        self.base_repo = self.get_repo(base_repo_name)
-        self.pull_number = pull_request.number
-        self.liaison_host_override = get_liaison_host_override(pull_request)
-
-        # Get all the changed files in a pull request
-        self.changed_files: List[Box] = self.get_changed_files()
+        base_repo_name, pull_request = self.setup()
 
         (base_dirs,
          botname_dirs,
@@ -75,6 +67,20 @@ class PrProcessorBase:
         status = self.create_status(resp, commit_sha, self.github_client,
                                     base_repo_name)
         return resp, status
+
+    def setup(self):
+        pull_request = self.pr_event.pull_request
+        head = pull_request.head
+        head_repo_name = head.repo.full_name
+        self.head_repo = self.get_repo(head_repo_name)
+        base_repo_name = pull_request.base.repo.full_name
+        self.base_repo = self.get_repo(base_repo_name)
+        self.pull_number = pull_request.number
+        self.liaison_host_override = get_liaison_host_override(pull_request)
+        self.replace_sim_url = get_replace_sim_url(pull_request)
+        # Get all the changed files in a pull request
+        self.changed_files: List[Box] = self.get_changed_files()
+        return base_repo_name, pull_request
 
     @staticmethod
     def get_ci_resp(resp) -> Tuple[str, str]:
@@ -139,7 +145,8 @@ class PrProcessorBase:
                 changed_filetypes=changed_filetypes,
                 from_mock=self.is_mock,
                 github_client=self.github_client,
-                botleague_liaison_host=self.liaison_host_override,)
+                botleague_liaison_host=self.liaison_host_override,
+                replace_sim_url=self.replace_sim_url)
         elif constants.BOTS_DIR in base_dirs or \
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
@@ -334,11 +341,6 @@ def add_changed_problem(changed_problem_definitions, changed_file):
     if modified and is_prob_def:
         changed_problem_definitions.add(changed_file.filename)
 
-
-if __name__ == '__main__':
-    pull_botleague()
-
-
 def get_liaison_host_override(pull_request):
     if is_json(pull_request.body):
         pr_opts = dbox(Box.from_json(pull_request.body))
@@ -346,3 +348,29 @@ def get_liaison_host_override(pull_request):
     else:
         return None
 
+def get_replace_sim_url(pull_request):
+    if is_json(pull_request.body):
+        pr_opts = dbox(Box.from_json(pull_request.body))
+        return pr_opts.replace_sim_url or None
+    else:
+        return None
+
+def handle_pr_request(payload):
+    action = payload['action']
+    if action in ['opened', 'synchronize', 'reopened']:
+        pr_processor = get_pr_processor()
+        pr_event = Box(payload)
+        pull_request = pr_event.pull_request
+        pr_processor.pr_event = pr_event
+        if get_liaison_host_override(pull_request) and ON_GAE:
+            log.warning(f'DEBUG local set on pull request '
+                        f'{pr_event.to_json(indent=2)} '
+                        f'Skipping!')
+        else:
+            log.info(f'Processing pull request event')
+            log.trace(f'{pr_event.to_json(indent=2)}')
+            return pr_processor.process_changes()
+
+
+if __name__ == '__main__':
+    pull_botleague()

@@ -366,7 +366,7 @@ def process_results(result_payload: Box,
             if 'results' not in result_payload:
                 error.http_status_code = 400
                 error.message = 'No "results" found in request'
-            elif 'errors' in results:
+            elif dbox(results).errors:
                 error.http_status_code = 500
                 error.message = BoxList(results.errors).to_json(
                     indent=2, default=str)
