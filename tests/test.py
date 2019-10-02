@@ -14,7 +14,7 @@ from bot_eval import get_eval_db_key
 from handlers.confirm_handler import process_confirm
 from handlers.results_handler import add_eval_data_to_results, process_results, \
     score_within_confidence_interval
-from handlers.pr_handler import PrProcessorMock
+from handlers.pr_handler import PrProcessorMock, handle_pr_request
 from models.eval_data import INVALID_DB_KEY_STATE_MESSAGE, get_eval_data
 from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
 
@@ -220,8 +220,12 @@ def bot_eval_helper():
                                           'results.json'))
     results.eval_key = eval_data.eval_key
     add_eval_data_to_results(eval_data, results)
-
-
     # TODO: assert much more here
 
+
+def test_problem_ci_sim_build():
+    pr_event = Mockable.read_test_box('pr_event.json')
+    resp, status = handle_pr_request(pr_event)
+    assert resp
+    assert status is None  # No PR status gets created in test
 

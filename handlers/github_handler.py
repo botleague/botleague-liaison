@@ -1,9 +1,8 @@
 from botleague_helpers.crypto import decrypt_symmetric
-from box import Box
 from pyramid.view import view_config, view_defaults
 
 from constants import ON_GAE
-from handlers.pr_handler import get_pr_processor, get_liaison_host_override
+from handlers.pr_handler import handle_pr_request
 from pyramid import httpexceptions
 from logs import log
 
@@ -74,20 +73,7 @@ class PayloadView(object):
         """This method is a continuation of PayloadView process, triggered if
         header HTTP-X-Github-Event type is Pull Request"""
         # {u'name': u'marioidival', u'email': u'marioidival@gmail.com'}
-        action = self.payload['action']
-        if action in ['opened', 'synchronize', 'reopened']:
-            pr_processor = get_pr_processor()
-            pr_event = Box(self.payload)
-            pull_request = pr_event.pull_request
-            pr_processor.pr_event = pr_event
-            if get_liaison_host_override(pull_request) and ON_GAE:
-                log.warning(f'DEBUG local set on pull request '
-                         f'{pr_event.to_json(indent=2)} '
-                         f'Skipping!')
-            else:
-                log.info(f'Processing pull request event')
-                log.trace(f'{pr_event.to_json(indent=2)}')
-                pr_processor.process_changes()
+        handle_pr_request(self.payload)
 
         # Responses are sent via creating statuses on the pull request:
         #   c.f. create_status
