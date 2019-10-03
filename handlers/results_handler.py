@@ -299,7 +299,7 @@ def merge_pull_request(pull_request: Box) -> Error:
         github_client = Github(blconfig.github_token)
         repo = github_client.get_repo(pull_request.base_full_name)
         pr = repo.get_pull(pull_request.number)
-        if dbox(pr.raw_data).draft:
+        if dbox(pr.raw_data).mergeable_state == 'draft':
             log.info('Pull request is draft, not trying to merge')
         else:
             try:
