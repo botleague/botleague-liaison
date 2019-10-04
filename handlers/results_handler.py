@@ -52,11 +52,9 @@ def save_results(db, error, eval_data, gist, results):
     eval_data.results_at = SERVER_TIMESTAMP
     save_eval_data(eval_data, db)
 
-    # Handle problem ci before saving bot scores as we want to compare the
-    # new bot scores to the previous
+    # Handle problem ci before saving to the aggregate bot scores
+    # as we want to compare the new bot scores to the previous
     problem_ci, should_merge, ci_error = check_for_problem_ci(db, eval_data)
-
-    # If problem_ci fails, don't save bot score
 
     if problem_ci:
         save_problem_ci_results(ci_error, db, error, eval_data, gist,
@@ -80,14 +78,16 @@ def save_results(db, error, eval_data, gist, results):
 def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
                             results, should_merge):
     if not should_merge:
-        if not ci_error:
-            log.info('Problem CI not yet finished')
-        else:
-            log.warning('Problem CI failed, not saving to bots '
+        # If problem_ci fails, don't save to aggregate bot scores collection
+        if ci_error:
+            log.error('Problem CI failed, not saving to bots '
                         'official scores as this is likely an issue '
                         'with the new version of the problem.')
             problem_ci.status = PROBLEM_CI_STATUS_FAILED
             problem_ci.error = ci_error
+        else:
+            log.info('Problem CI not yet finished')
+
     else:
         # Aggregate data from bot evals now that they're done
         gists = BoxList()
