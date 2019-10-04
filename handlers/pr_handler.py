@@ -41,6 +41,7 @@ class PrProcessorBase:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # Support multiple inheritance
         self.is_mock = isinstance(self, Mockable)
+        pull_botleague()
 
     def process_changes(self) -> \
             Tuple[Union[PrResponse, List[PrResponse]], str]:
@@ -195,7 +196,6 @@ class PrProcessor(PrProcessorBase):
             raise RuntimeError('Should not be using this class in tests!')
         super().__init__()
         self.pr_event = pr_event
-        pull_botleague()
 
     def get_changed_files(self) -> List[Box]:
         # See tests/data/bot_eval/changed_files.json

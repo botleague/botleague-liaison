@@ -140,6 +140,8 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
     Check to see if PR is a problem CI and merge iff this is the last bot
     :return: Whether we should merge or not
     """
+    # TODO: Test this (try_reduce_async is tested in helpers, but this
+    #  method which calls it needs to be as well
     pr = eval_data.pull_request
     problem_ci_db_key = get_problem_ci_db_id(pr.number, pr.head_commit)
     problem_ci = db.get(problem_ci_db_key)
