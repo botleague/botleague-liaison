@@ -150,6 +150,7 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
         should_merge = True
     else:
         def reduce():
+            result = dbox({})
             # Refetch all bots in case scores came in after initial request
             for bot_eval_key in problem_ci.bot_eval_keys:
                 bot_eval = db.get(get_eval_db_key(bot_eval_key))
@@ -161,25 +162,26 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
                          f'past scores: {box2json(past_bot_scores)}')
                 if not score_within_confidence_interval(bot_eval,
                                                         past_bot_scores):
-                    global error
-                    error = f'Score for bot not within confidence interval, ' \
-                            f'problem CI failed: ' \
-                            f'bot details {box2json(bot_eval_no_eval_key)}'
+                    result.error = f'Score for bot not within confidence ' \
+                        f'interval, problem CI failed: bot details ' \
+                        f'{box2json(bot_eval_no_eval_key)}'
                     log.error(error)
-                    return False
+                    return result
             else:
                 log.success('Score for bot within confidence interval, '
                           'problem CI successful!')
-                return True
+                return result
 
         reduce_result = try_reduce_async(
             reduce_id=problem_ci_db_key,
             ready_fn=get_bots_done_fn(db, problem_ci.bot_eval_keys),
             reduce_fn=reduce)
-        if reduce_result:
-            should_merge = True
-        else:
+        if reduce_result.error:
+            error = reduce_result.error
             should_merge = False
+        else:
+            should_merge = True
+
     return problem_ci, should_merge, error
 
 
