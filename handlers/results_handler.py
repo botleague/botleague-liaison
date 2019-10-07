@@ -167,9 +167,9 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
                     result.error = f'Score for bot not within confidence ' \
                         f'interval {in_ci_info.low}-{in_ci_info.high}, ' \
                         f'mean: {in_ci_info.mean} ' \
-                        f'problem CI failed: bot details ' \
-                        f'{box2json(bot_eval_no_eval_key)}'
-                    log.error(result.error)
+                        f'problem CI failed'
+                    log.error(result.error + ': bot details ' \
+                        f'{box2json(bot_eval_no_eval_key)}')
                     return result
             else:
                 log.success('Score for bot within confidence interval, '
@@ -281,12 +281,19 @@ def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
         sha=eval_data.pull_request.head_commit)
     # status can be error, failure, pending, or success
     status = league_commit.create_status(
-        pr_status,
-        description=pr_msg,
+        pr_status[:139],
+        description=truncate_pr_msg(pr_msg),
         target_url=f'{constants.HOST}/problem_ci_status?id={problem_ci.id}',
         context='Botleague')
     log.info(f'Updated PR status {status}')
     return status
+
+
+def truncate_pr_msg(pr_msg):
+    if len(pr_msg) >= 140:
+        log.error(f'PR message {pr_msg} was longer than 140 chars, truncating')
+        pr_msg = pr_msg[:139]
+    return pr_msg
 
 
 def update_pr_status(error, eval_data, results, gist):
@@ -303,7 +310,7 @@ def update_pr_status(error, eval_data, results, gist):
     # status can be error, failure, pending, or success
     status = commit.create_status(
         pr_status,
-        description=pr_msg,
+        description=truncate_pr_msg(pr_msg),
         target_url=gist,
         context='Botleague')
     log.info(f'Updated PR status {status}')
