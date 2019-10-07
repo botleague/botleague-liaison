@@ -85,6 +85,7 @@ def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
                         'with the new version of the problem.')
             problem_ci.status = PROBLEM_CI_STATUS_FAILED
             problem_ci.error = ci_error
+            update_pr_status_problem_ci(ci_error, problem_ci, eval_data)
         else:
             log.info('Problem CI not yet finished')
 
@@ -160,10 +161,13 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
                 log.info(f'Checking confidence interval for bot_eval '
                          f'{box2json(bot_eval)}\n'
                          f'past scores: {box2json(past_bot_scores)}')
-                if not score_within_confidence_interval(bot_eval,
-                                                        past_bot_scores):
+                in_ci, in_ci_info = score_within_confidence_interval(
+                    bot_eval, past_bot_scores)
+                if not in_ci:
                     result.error = f'Score for bot not within confidence ' \
-                        f'interval, problem CI failed: bot details ' \
+                        f'interval {in_ci_info.low}-{in_ci_info.high}, ' \
+                        f'mean: {in_ci_info.mean} ' \
+                        f'problem CI failed: bot details ' \
                         f'{box2json(bot_eval_no_eval_key)}'
                     log.error(result.error)
                     return result
@@ -190,7 +194,7 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
 
 
 def score_within_confidence_interval(bot_eval: Box,
-                                     past_bot_scores: Box) -> bool:
+                                     past_bot_scores: Box) -> Tuple[bool, Box]:
     """
     Compare with current mean score and check within
     acceptable_score_deviation range.
@@ -211,14 +215,17 @@ def score_within_confidence_interval(bot_eval: Box,
      infinity 0.95               1.96
 
     """
+    info = Box(mean=None, ci_high=None, ci_low=None,
+               acceptable_score_deviation=None)
+
     if bot_eval.eval_key in [p.eval_key for p in past_bot_scores.scores]:
         log.warning('Score already recorded, this should not happen!')
-        return True
+        return True, info
     score = bot_eval.results.score
     acceptable_score_deviation = bot_eval.problem_def.acceptable_score_deviation
     if not past_bot_scores.scores:
         # If no previous scores, then we are the mean of the CI
-        return True
+        return True, info
     score_values = [b.score for b in past_bot_scores.scores]
     multiplier = {
         2: 12.71,
@@ -231,13 +238,19 @@ def score_within_confidence_interval(bot_eval: Box,
     ci_low = past_bot_scores.mean - diff_max
     ci_high = past_bot_scores.mean + diff_max
 
+    info.high = ci_high
+    info.low = ci_low
+    info.mean = past_bot_scores.mean
+    info.acceptable_score_deviation = acceptable_score_deviation
+
     if math.nan in [ci_high, ci_low]:
         ret = True
     elif ci_low <= score <= ci_high:
         ret = True
     else:
         ret = False
-    return ret
+
+    return ret, info
 
 
 

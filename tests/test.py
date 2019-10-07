@@ -147,30 +147,30 @@ def test_score_within_confidence_interval():
     past_bot_scores = get_past_bot_scores([10, 100])
 
     # Max score here is 270, so should fail
-    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Min score here is -160, so should fail
     bot_eval.results.score = -200
-    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Let's pass
     bot_eval.results.score = 200
-    assert score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert score_within_confidence_interval(bot_eval, past_bot_scores)[0]
     bot_eval.results.score = -100
-    assert score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Get more confident and fail
     past_bot_scores = get_past_bot_scores([100, 100, 100])
     bot_eval.results.score = -100
-    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Test first run
     past_bot_scores = get_past_bot_scores([])
-    assert score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Don't fail if bot score is nan
     past_bot_scores = get_past_bot_scores([math.nan])
-    assert not score_within_confidence_interval(bot_eval, past_bot_scores)
+    assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Fail fuzz
     bot_eval.problem_def.acceptable_score_deviation = 0.4
@@ -189,7 +189,7 @@ def fuzz_score_within_ci(bot_eval):
         past_bot_scores = get_past_bot_scores(
             [random() for _ in range(10 ** 3)])
         bot_eval.results.score = random()
-        if not score_within_confidence_interval(bot_eval, past_bot_scores):
+        if not score_within_confidence_interval(bot_eval, past_bot_scores)[0]:
             return False
     else:
         return True
