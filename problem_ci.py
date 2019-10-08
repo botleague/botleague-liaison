@@ -4,6 +4,7 @@ from typing import Union
 
 import github
 from botleague_helpers.reduce import create_reduce
+from botleague_helpers.utils import box2json
 from box import Box
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from logs import log
@@ -14,6 +15,7 @@ from responses.pr_responses import RegenPrResponse, ErrorPrResponse, \
     EvalErrorPrResponse
 from constants import BOTLEAGUE_REPO_ROOT, ONGOING_PROBLEM_CI_KEY_PREFIX
 from utils import read_box, get_liaison_db_store
+
 
 PROBLEM_CI_STATUS_PENDING = 'pending'
 PROBLEM_CI_STATUS_FAILED = 'failed'
@@ -32,7 +34,7 @@ def process_changed_problem(changed_problem_definitions,
         resp = RegenPrResponse(
             f'Generating leaderboard for problem change. PR '
             f'changed files were '
-            f'{changed_files.to_json(indent=2, default=str)}')
+            f'{box2json(changed_files)}')
         should_gen = True
     elif len(changed_problem_definitions) > 1:
         # TODO: Nothing wrong with enabling this except for risk of
@@ -113,7 +115,7 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
             eval_data = trigger_resp.eval_data
             bot_evals.append(eval_data)
             log.success(f'Triggered '
-                        f'{eval_data.to_json(indent=2, default=str)}')
+                        f'{box2json(eval_data)}')
         elif isinstance(trigger_resp, EvalErrorPrResponse):
             log.error(f'Could not evaluate bot {bot_user}:{botname}. '
                       f'Error: {trigger_resp.msg}')

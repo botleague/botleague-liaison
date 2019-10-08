@@ -218,7 +218,8 @@ class BotEval(BotEvalBase):
                 endpoint = os.environ['REPLACE_PROBLEM_HOST'] + \
                            endpoint[endpoint.find('/eval'):]
             # TODO: Don't pass everything through to endpoint - i.e. cleanse
-            serializable_data = json.loads(eval_data.to_json(default=str))
+            serializable_data = json.loads(eval_data.to_json(default=str,
+                                                             sort_keys=True))
             endpoint_resp = requests.post(endpoint,
                                           json=serializable_data,
                                           timeout=10)

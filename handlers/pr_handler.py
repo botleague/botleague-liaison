@@ -15,6 +15,7 @@ from box import Box
 
 from bot_eval import process_changed_bot
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
+from botleague_helpers.utils import box2json
 
 from constants import ON_GAE
 from problem_ci import process_changed_problem
@@ -221,7 +222,7 @@ class PrProcessor(PrProcessorBase):
             # target_url='https://botleague.io/users/username/botname/this-evaluation',
             context='Botleague')
         log.success(f'Created status on pull request '
-                    f'{Box(status.raw_data).to_json(indent=2, default=str)}')
+                    f'{box2json(Box(status.raw_data))}')
         return status
 
     @property

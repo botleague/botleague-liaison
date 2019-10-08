@@ -133,7 +133,7 @@ def save_to_bot_scores(eval_data, eval_key, new_score: Box):
             save_to_bot_scores(eval_data, eval_key, new_score)
         else:
             log.success(f'Saved new bot scores '
-                        f'{new_bot_scores.to_json(indent=2, default=str)}')
+                        f'{box2json(new_bot_scores)}')
 
 
 def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
@@ -323,7 +323,7 @@ def merge_pull_request(pull_request: Box) -> Error:
         log.info('Skipping pr merge in test')
     else:
         log.info(f'Merging pull request '
-                 f'{pull_request.to_json(indent=2, default=str)}')
+                 f'{box2json(pull_request)}')
         github_client = Github(blconfig.github_token)
         repo = github_client.get_repo(pull_request.base_full_name)
         pr = repo.get_pull(pull_request.number)
@@ -341,7 +341,7 @@ def merge_pull_request(pull_request: Box) -> Error:
 
     if error:
         log.error(f'Error merging pull request '
-                  f'{error.to_json(indent=2, default=str)}')
+                  f'{box2json(error)}')
 
     return error
 
@@ -396,8 +396,7 @@ def process_results(result_payload: Box,
                 error.message = 'No "results" found in request'
             elif dbox(results).errors:
                 error.http_status_code = 500
-                error.message = BoxList(results.errors).to_json(
-                    indent=2, default=str)
+                error.message = box2json(BoxList(results.errors))
             add_eval_data_to_results(eval_data, results)
             gist = post_results_to_gist(db, results)
             gist = gist.html_url if gist else None
