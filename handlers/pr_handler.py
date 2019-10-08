@@ -344,7 +344,10 @@ def add_changed_problem(changed_problem_definitions, changed_file):
 def get_liaison_host_override(pull_request):
     if is_json(pull_request.body):
         pr_opts = dbox(Box.from_json(pull_request.body))
-        return pr_opts.botleague_liaison_host or None
+        host = pr_opts.botleague_liaison_host or None
+        if host and host.endswith('/'):
+            host = host[:-1]
+        return host
     else:
         return None
 
