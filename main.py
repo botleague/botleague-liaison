@@ -21,7 +21,11 @@ from handlers.problem_ci_status_handler import handle_problem_ci_status_request
 from handlers.results_handler import handle_results_request
 from handlers import github_handler
 
-
+try:
+  import googleclouddebugger
+  googleclouddebugger.enable()
+except ImportError:
+  pass
 
 # TODO(Challenges): Allow private docker and github repos that grant access to
 #  special botleague user. Related: https://docs.google.com/document/d/1IOMMtfEVaPWFPg8pEqPOPbLO__bs9_SCmA8_GbfGBTU/edit#
