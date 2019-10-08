@@ -5,7 +5,7 @@ class Error(Box):
     message: str
     http_status_code: int
 
-    def __init__(self, http_status_code: int = 500, message: str = '', *args,
+    def __init__(self, http_status_code: int = None, message: str = '', *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.http_status_code = http_status_code
