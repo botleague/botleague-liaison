@@ -281,7 +281,7 @@ def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
         sha=eval_data.pull_request.head_commit)
     # status can be error, failure, pending, or success
     status = league_commit.create_status(
-        pr_status[:139],
+        pr_status,
         description=truncate_pr_msg(pr_msg),
         target_url=f'{constants.HOST}/problem_ci_status?id={problem_ci.id}',
         context='Botleague')
