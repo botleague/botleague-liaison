@@ -11,22 +11,21 @@ from typing import Tuple, Optional
 
 import github
 from botleague_helpers.config import get_test_name_from_callstack, blconfig
+from botleague_helpers.utils import box2json, dbox
 from botleague_helpers.db import DB, get_db
 from box import Box, BoxList
-from github import Github, PullRequestMergeStatus, GithubException
+from github import Github, GithubException
 import github.Gist
 
 from bot_eval import get_eval_db_key
 import constants
-from handlers.pr_handler import PrProcessor
 from models.eval_data import get_eval_data, save_eval_data
 from logs import log
 
 from problem_ci import get_problem_ci_db_id, PROBLEM_CI_STATUS_FAILED, \
     PROBLEM_CI_STATUS_PASSED
 from responses.error import Error
-from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox, \
-    box2json
+from utils import trigger_leaderboard_generation, get_liaison_db_store
 
 @log.catch(reraise=True)
 def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
