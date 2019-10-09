@@ -21,7 +21,7 @@ def run_all(test_module):
             log.success(f'Test: {attr} ran successfully')
     return num
 
-
+@log.catch(reraise=True)
 def main():
     test_module = test
     if len(sys.argv) > 1:
