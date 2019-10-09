@@ -212,6 +212,7 @@ def bot_eval_helper():
     responses, status = pr_processor.process_changes()
     assert len(responses) == 1
     resp = responses[0]
+    # noinspection PyUnresolvedReferences
     eval_data = resp.eval_data
     assert isinstance(resp, EvalStartedPrResponse)
     username = eval_data.username
