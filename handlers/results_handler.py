@@ -164,8 +164,9 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
                 in_ci, in_ci_info = score_within_confidence_interval(
                     bot_eval, past_bot_scores)
                 if not in_ci:
-                    result.error = f'Score for bot not within confidence ' \
-                        f'interval {in_ci_info.low}-{in_ci_info.high}, ' \
+                    result.error = f'Score for bot {bot_eval.results.score}' \
+                        f' not within confidence interval ' \
+                        f'{in_ci_info.low} to {in_ci_info.high}, ' \
                         f'mean: {in_ci_info.mean} ' \
                         f'problem CI failed'
                     log.error(result.error + ': bot details ' \
