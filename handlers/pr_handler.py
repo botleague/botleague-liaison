@@ -38,6 +38,7 @@ class PrProcessorBase:
     _github_client: github.Github = None
     liaison_host_override: str = None
     replace_sim_url: str = None
+    container_postfix: str = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # Support multiple inheritance
@@ -79,7 +80,9 @@ class PrProcessorBase:
         self.base_repo = self.get_repo(base_repo_name)
         self.pull_number = pull_request.number
         self.liaison_host_override = get_liaison_host_override(pull_request)
-        self.replace_sim_url = get_replace_sim_url(pull_request)
+        self.replace_sim_url = get_from_pr_body('replace_sim_url', pull_request)
+        self.container_postfix = get_from_pr_body('container_postfix',
+                                                  pull_request)
         # Get all the changed files in a pull request
         self.changed_files: List[Box] = self.get_changed_files()
         return base_repo_name, pull_request
@@ -148,7 +151,9 @@ class PrProcessorBase:
                 from_mock=self.is_mock,
                 github_client=self.github_client,
                 botleague_liaison_host=self.liaison_host_override,
-                replace_sim_url=self.replace_sim_url)
+                replace_sim_url=self.replace_sim_url,
+                container_postfix=self.container_postfix
+            )
         elif constants.BOTS_DIR in base_dirs or \
                 constants.PROBLEMS_DIR in base_dirs:
             # Fail pull request, either a bot or problem,
@@ -343,19 +348,16 @@ def add_changed_problem(changed_problem_definitions, changed_file):
         changed_problem_definitions.add(changed_file.filename)
 
 def get_liaison_host_override(pull_request):
-    if is_json(pull_request.body):
-        pr_opts = dbox(Box.from_json(pull_request.body))
-        host = pr_opts.botleague_liaison_host or None
-        if host and host.endswith('/'):
-            host = host[:-1]
-        return host
-    else:
-        return None
+    host = get_from_pr_body('botleague_liaison_host', pull_request)
+    if host and host.endswith('/'):
+        host = host[:-1]
+    return host
 
-def get_replace_sim_url(pull_request):
+
+def get_from_pr_body(field, pull_request):
     if is_json(pull_request.body):
         pr_opts = dbox(Box.from_json(pull_request.body))
-        return pr_opts.replace_sim_url or None
+        return pr_opts[field] or None
     else:
         return None
 

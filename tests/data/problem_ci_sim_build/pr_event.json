@@ -33,7 +33,7 @@
       "type": "User",
       "site_admin": false
     },
-    "body": "{\r\n\"botleague_liaison_host\": \"https://1f750257.ngrok.io\",\r\n\"replace_sim_url\": \"https://storage.googleapis.com/deepdriveio/sim/release_candidates/deepdrive-sim-linux-3.0.20191001185111.zip\"\r\n}",
+    "body": "{\"botleague_liaison_host\": \"https://1f750257.ngrok.io\",\"replace_sim_url\": \"https://storage.googleapis.com/deepdriveio/sim/release_candidates/deepdrive-sim-linux-3.0.20191001185111.zip\",\"container_postfix\": \"0\"}",
     "created_at": "2019-10-01T23:40:34Z",
     "updated_at": "2019-10-01T23:40:34Z",
     "closed_at": null,

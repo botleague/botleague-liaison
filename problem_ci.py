@@ -28,7 +28,8 @@ def process_changed_problem(changed_problem_definitions,
                             user_dirs, changed_filetypes, from_mock,
                             github_client: github.Github,
                             botleague_liaison_host=None,
-                            replace_sim_url=None):
+                            replace_sim_url=None,
+                            container_postfix=None):
     should_gen = False
     if not changed_problem_definitions:
         resp = RegenPrResponse(
@@ -59,7 +60,8 @@ def process_changed_problem(changed_problem_definitions,
             resp = eval_bots(base_repo, bots_with_problem, changed_filenames,
                              changed_files, from_mock, github_client, head_repo,
                              prob_def, problem_id, pull_request,
-                             botleague_liaison_host, replace_sim_url)
+                             botleague_liaison_host, replace_sim_url,
+                             container_postfix)
             if isinstance(resp, ProblemCIResponse):
                 pci_id = get_problem_ci_db_id(
                     pull_number=pull_request.number,
@@ -88,7 +90,8 @@ def get_problem_ci_db_id(pull_number, pull_head_commit):
 
 def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
               from_mock, github_client, head_repo, prob_def, problem_id,
-              pull_request, botleague_liaison_host, replace_sim_url) \
+              pull_request, botleague_liaison_host, replace_sim_url,
+              container_postfix) \
         -> Union[ProblemCIResponse, EvalErrorPrResponse]:
     bot_evals = []
 
@@ -110,7 +113,8 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
             botleague_liaison_host=botleague_liaison_host)
         trigger_resp = bot_eval.trigger_single_eval(
             bot_def=bot, problem_def=prob_def, problem_id=problem_id,
-            problem_ci_replace_sim_url=replace_sim_url)
+            problem_ci_replace_sim_url=replace_sim_url,
+            container_postfix=container_postfix)
         if isinstance(trigger_resp, EvalStartedPrResponse):
             eval_data = trigger_resp.eval_data
             bot_evals.append(eval_data)
