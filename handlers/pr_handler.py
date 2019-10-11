@@ -361,6 +361,7 @@ def get_from_pr_body(field, pull_request):
     else:
         return None
 
+
 def handle_pr_request(payload):
     action = payload['action']
     if action in ['opened', 'synchronize', 'reopened']:
