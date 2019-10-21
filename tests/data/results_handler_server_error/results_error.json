@@ -1,4 +1,4 @@
 {
   "eval_key": "ITG3460MTVN7JOB59BG51XPXR",
-  "results": {"errors": ["Mistakes were made"]}
+  "results": {"errors": {"bad-container": "Mistakes were made"}}
 }
