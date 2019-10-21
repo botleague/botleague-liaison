@@ -160,13 +160,18 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
                 log.info(f'Checking confidence interval for bot_eval '
                          f'{box2json(bot_eval)}\n'
                          f'past scores: {box2json(past_bot_scores)}')
-                in_ci, in_ci_info = score_within_confidence_interval(
+                if bot_eval.results.errors:
+                    result.error = str(bot_eval.results.errors)
+                    log.error(result.error + ': bot details ' \
+                        f'{box2json(bot_eval_no_eval_key)}')
+                    return result
+                in_interval, interval_info = score_within_confidence_interval(
                     bot_eval, past_bot_scores)
-                if not in_ci:
+                if not in_interval:
                     result.error = f'Score for bot {bot_eval.results.score}' \
                         f' not within confidence interval ' \
-                        f'{in_ci_info.low} to {in_ci_info.high}, ' \
-                        f'mean: {in_ci_info.mean} ' \
+                        f'{interval_info.low} to {interval_info.high}, ' \
+                        f'mean: {interval_info.mean} ' \
                         f'problem CI failed'
                     log.error(result.error + ': bot details ' \
                         f'{box2json(bot_eval_no_eval_key)}')
@@ -396,7 +401,7 @@ def process_results(result_payload: Box,
                 error.message = 'No "results" found in request'
             elif dbox(results).errors:
                 error.http_status_code = 500
-                error.message = box2json(BoxList(results.errors))
+                error.message = box2json(Box(results.errors))
             add_eval_data_to_results(eval_data, results)
             gist = post_results_to_gist(db, results)
             gist = gist.html_url if gist else None
