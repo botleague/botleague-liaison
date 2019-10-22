@@ -64,6 +64,10 @@ def handle_problem_ci_status(request):
     return resp
 
 
+def handle_test_error(request):
+    log.error('Testing error handling')
+
+
 def handle_confirm(request):
     start = time.time()
     body, error = handle_confirm_request(request)
