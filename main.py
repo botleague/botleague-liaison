@@ -123,6 +123,11 @@ with Configurator() as config:
                     route_name='problem_ci_status', renderer='json',
                     request_method=('GET', 'POST'))
 
+    # config.add_route(name='test_error', pattern='/test_error')
+    # config.add_view(view=handle_test_error,
+    #                 route_name='test_error', renderer='json',
+    #                 request_method=('GET', 'POST'))
+
     config.add_route(name='github_payload', pattern='/github_payload')
     # The view for the Github payload route is added via class annotation
 
