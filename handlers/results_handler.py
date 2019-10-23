@@ -376,6 +376,10 @@ def process_results(result_payload: Box,
     eval_data = Box()
     gist = None
     should_skip = False
+    # Note that 200, 400, and 500 are the ONLY expected status codes.
+    # Other codes will be retried by the worker in post_results_with_retries.
+    # This is due to App Engine returning 409's on the rare occasion.
+    # https://voyage.slack.com/archives/CJLS63AMD/p1571773377003400
     if not eval_key:
         error.http_status_code = 400
         error.message = 'eval_key must be in JSON data payload'
