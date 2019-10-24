@@ -45,12 +45,10 @@ def handle_results(request):
     resp = Response(json=resp_box.to_dict())
     if error:
         resp.status_code = error.http_status_code
-        log_fn = log.error
+        log.error(f'Error handling results {error} - results:'
+                           f' {resp_box.to_json(indent=2)}')
     else:
-        log_fn = log.info
-
-    log_fn(f'Results response {resp_box.to_json(indent=2)}')
-
+        log.info(f'Results response {resp_box.to_json(indent=2)}')
     return resp
 
 
