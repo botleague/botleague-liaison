@@ -347,7 +347,8 @@ def merge_pull_request(pull_request: Box) -> Error:
 
     if error:
         log.error(f'Error merging pull request '
-                  f'{box2json(error)}')
+                  f'{box2json(pull_request)} '
+                  f'Error: {box2json(error)}')
 
     return error
 
