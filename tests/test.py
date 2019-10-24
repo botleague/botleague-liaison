@@ -1,19 +1,19 @@
 
 # Set SHOULD_RECORD=true to record changed-files.json
-import math
 import statistics
+
+import math
 from os.path import join
 from random import random
 
-from botleague_helpers.db import get_db
 from box import Box
-from loguru import logger as log
 
 import constants
 from bot_eval import get_eval_db_key
 from handlers.confirm_handler import process_confirm
 from handlers.results_handler import add_eval_data_to_results, process_results, \
-    score_within_confidence_interval
+    score_within_confidence_interval, get_past_bot_scores, get_scores_db, \
+    get_scores_id
 from handlers.pr_handler import PrProcessorMock, handle_pr_request
 from models.eval_data import INVALID_DB_KEY_STATE_MESSAGE, get_eval_data
 from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
@@ -140,11 +140,11 @@ def test_confirm_handler():
 
 
 def test_score_within_confidence_interval():
-    bot_eval = dbox()
+    bot_eval = dbox(username='__testuser', botname='__testbot')
     bot_eval.problem_def.acceptable_score_deviation = 100
 
     bot_eval.results.score = 300
-    past_bot_scores = get_past_bot_scores([10, 100])
+    past_bot_scores = get_past_bot_scores_test([10, 100], bot_eval)
 
     # Max score here is 270, so should fail
     assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
@@ -160,16 +160,16 @@ def test_score_within_confidence_interval():
     assert score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Get more confident and fail
-    past_bot_scores = get_past_bot_scores([100, 100, 100])
+    past_bot_scores = get_past_bot_scores_test([100, 100, 100], bot_eval)
     bot_eval.results.score = -100
     assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Test first run
-    past_bot_scores = get_past_bot_scores([])
+    past_bot_scores = get_past_bot_scores_test([], bot_eval)
     assert score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Don't fail if bot score is nan
-    past_bot_scores = get_past_bot_scores([math.nan])
+    past_bot_scores = get_past_bot_scores_test([math.nan], bot_eval)
     assert not score_within_confidence_interval(bot_eval, past_bot_scores)[0]
 
     # Fail fuzz
@@ -186,22 +186,13 @@ def test_score_within_confidence_interval():
 
 def fuzz_score_within_ci(bot_eval):
     for _ in range(30):
-        past_bot_scores = get_past_bot_scores(
-            [random() for _ in range(10 ** 3)])
+        past_bot_scores = get_past_bot_scores_test(
+            [random() for _ in range(10 ** 3)], bot_eval)
         bot_eval.results.score = random()
         if not score_within_confidence_interval(bot_eval, past_bot_scores)[0]:
             return False
     else:
         return True
-
-
-def get_past_bot_scores(past_scores):
-    past_bot_scores = dbox()
-    def get_score(s):
-        return Box(score=s, eval_key=generate_rand_alphanumeric(12))
-    past_bot_scores.scores = [get_score(s) for s in past_scores]
-    past_bot_scores.mean = statistics.mean(past_scores) if past_scores else None
-    return past_bot_scores
 
 
 def bot_eval_helper():
@@ -230,3 +221,20 @@ def test_problem_ci_sim_build():
     assert resp
     assert status is None  # No PR status gets created in test
 
+
+def get_past_bot_scores_test(past_scores: list, bot_eval: Box):
+    if not past_scores:
+        get_scores_db().set(get_scores_id(bot_eval), {})
+    else:
+        past_bot_scores = dbox()
+
+        def get_score(s):
+            return Box(score=s, eval_key=generate_rand_alphanumeric(12))
+
+        past_bot_scores.scores = [get_score(s) for s in past_scores]
+        past_bot_scores.mean = statistics.mean(
+            past_scores) if past_scores else None
+
+        get_scores_db().set(get_scores_id(bot_eval), past_bot_scores)
+    ret = get_past_bot_scores(bot_eval)
+    return ret

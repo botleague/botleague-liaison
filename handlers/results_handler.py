@@ -25,7 +25,8 @@ from logs import log
 from problem_ci import get_problem_ci_db_id, PROBLEM_CI_STATUS_FAILED, \
     PROBLEM_CI_STATUS_PASSED
 from responses.error import Error
-from utils import trigger_leaderboard_generation, get_liaison_db_store
+from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox
+
 
 @log.catch(reraise=True)
 def handle_results_request(request) -> Tuple[Box, Box, Optional[str]]:
@@ -154,7 +155,7 @@ def check_for_problem_ci(db: DB, eval_data: Box) -> Tuple[Box, bool, str]:
             # Refetch all bots in case scores came in after initial request
             for bot_eval_key in problem_ci.bot_eval_keys:
                 bot_eval = db.get(get_eval_db_key(bot_eval_key))
-                past_bot_scores = get_scores_db().get(get_scores_id(bot_eval))
+                past_bot_scores = get_past_bot_scores(bot_eval)
                 bot_eval_no_eval_key = deepcopy(bot_eval)
                 del bot_eval_no_eval_key['eval_key']
                 log.info(f'Checking confidence interval for bot_eval '
@@ -458,3 +459,12 @@ def get_scores_db():
 if __name__ == '__main__':
     if 'collect_bot_scores' in sys.argv:
           collect_bot_scores()
+
+
+def get_past_bot_scores(bot_eval=None):
+    ret = None
+    if bot_eval:
+        ret = get_scores_db().get(get_scores_id(bot_eval))
+    if not ret:
+        ret = Box(scores=[], means=None)
+    return ret
