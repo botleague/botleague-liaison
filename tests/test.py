@@ -140,7 +140,8 @@ def test_confirm_handler():
 
 
 def test_score_within_confidence_interval():
-    bot_eval = dbox(username='__testuser', botname='__testbot')
+    bot_eval = dbox(username='testuser', botname='testbot')
+    bot_eval.problem_id = 'testorg/testproblem'
     bot_eval.problem_def.acceptable_score_deviation = 100
 
     bot_eval.results.score = 300

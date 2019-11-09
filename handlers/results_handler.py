@@ -118,14 +118,18 @@ def save_to_bot_scores(eval_data, eval_key, new_score: Box):
             score_stdev = None
         else:
             score_stdev = stdev(score_values)
-        new_bot_scores = Box(scores=bot_scores.scores,
-                              id=score_id,
-                              updated_at=SERVER_TIMESTAMP,
-                              mean=mean(score_values),
-                              max=max(score_values),
-                              min=min(score_values),
-                              median=median(score_values),
-                              stdev=score_stdev)
+        new_bot_scores = Box(
+            scores=bot_scores.scores,
+            id=score_id,
+            botname=eval_data.botname,
+            username=eval_data.username,
+            problem_id=eval_data.problem_id,
+            updated_at=SERVER_TIMESTAMP,
+            mean=mean(score_values),
+            max=max(score_values),
+            min=min(score_values),
+            median=median(score_values),
+            stdev=score_stdev)
         if not orig:
             new_bot_scores.created_at = SERVER_TIMESTAMP
         if not db.cas(score_id, orig, new_bot_scores):
@@ -431,7 +435,16 @@ def add_eval_data_to_results(eval_data: Box, results: Box):
 
 
 def get_scores_id(eval):
-    return f'{eval.username}#{eval.botname}'
+    """
+    :return: e.g. 'crizcraig#goodbot-on-deepdrive#unprotected_left'
+    """
+
+    # Forward slashes not allowed on firestore
+    # https://stackoverflow.com/a/54918283/134077
+    problem_id = eval.problem_id.replace('/', '#')
+
+    ret = f'{eval.username}#{eval.botname}-on-{problem_id}'
+    return ret
 
 
 def collect_bot_scores(docker_tag=
