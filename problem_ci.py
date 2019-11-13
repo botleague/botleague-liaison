@@ -32,16 +32,19 @@ def process_changed_problem(changed_problem_definitions,
                             container_postfix=None):
     should_gen = False
     if not changed_problem_definitions:
+        # This is a new problem, no bots have been run against it, so just
+        # regenerate the leaderboard to create the new problem page
         resp = RegenPrResponse(
             f'Generating leaderboard for problem change. PR '
             f'changed files were '
-            f'{box2json(changed_files)}')
+            f'{changed_files}')
         should_gen = True
     elif len(changed_problem_definitions) > 1:
         # TODO: Nothing wrong with enabling this except for risk of
         #   evaling a ton of bots on accident
         resp = ErrorPrResponse('Can only change one problem at a time')
     else:
+        # This is an existing problem, we need to rerun and validate bot perf
         prob_def = read_box(
             join(BOTLEAGUE_REPO_ROOT, changed_problem_definitions[0]))
         problem_id = '/'.join(changed_problem_definitions[0].split('/')[-3:-1])

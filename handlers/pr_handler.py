@@ -137,8 +137,6 @@ class PrProcessorBase:
                 github_client=self.github_client,
                 botleague_liaison_host=self.liaison_host_override,)
         elif base_dirs == [constants.PROBLEMS_DIR]:
-            # If this is an existing problem, trigger a problem rerun
-            # If it's a new problem, just return should_gen
             resp, should_gen = process_changed_problem(
                 changed_problem_definitions,
                 base_repo=self.base_repo,
