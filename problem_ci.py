@@ -34,10 +34,7 @@ def process_changed_problem(changed_problem_definitions,
     if not changed_problem_definitions:
         # This is a new problem, no bots have been run against it, so just
         # regenerate the leaderboard to create the new problem page
-        resp = RegenPrResponse(
-            f'Generating leaderboard for problem change. PR '
-            f'changed files were '
-            f'{changed_files}')
+        resp = RegenPrResponse(f'Generating leaderboard for new problem.')
         should_gen = True
     elif len(changed_problem_definitions) > 1:
         # TODO: Nothing wrong with enabling this except for risk of
