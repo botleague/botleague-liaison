@@ -21,7 +21,7 @@ from constants import ON_GAE
 from problem_ci import process_changed_problem
 from responses.pr_responses import ErrorPrResponse, StartedPrResponse, \
     RegenPrResponse, IgnorePrResponse, PrResponse, EvalStartedPrResponse, \
-    EvalErrorPrResponse
+    EvalErrorPrResponse, truncate_pr_msg
 import constants
 from tests.mockable import Mockable
 from tests.test_constants import CHANGED_FILES_FILENAME
@@ -221,7 +221,7 @@ class PrProcessor(PrProcessorBase):
 
         status = commit.create_status(
             status,
-            description=msg,
+            description=truncate_pr_msg(msg),
             # target_url='https://botleague.io/users/username/botname/this-evaluation',
             context='Botleague')
         log.success(f'Created status on pull request '
