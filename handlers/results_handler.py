@@ -25,6 +25,7 @@ from logs import log
 from problem_ci import get_problem_ci_db_id, PROBLEM_CI_STATUS_FAILED, \
     PROBLEM_CI_STATUS_PASSED
 from responses.error import Error
+from responses.pr_responses import truncate_pr_msg
 from utils import trigger_leaderboard_generation, get_liaison_db_store, dbox
 
 
@@ -297,13 +298,6 @@ def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
         context='Botleague')
     log.info(f'Updated PR status {status}')
     return status
-
-
-def truncate_pr_msg(pr_msg):
-    if len(pr_msg) >= 140:
-        log.error(f'PR message {pr_msg} was longer than 140 chars, truncating')
-        pr_msg = pr_msg[:139]
-    return pr_msg
 
 
 def update_pr_status(error, eval_data, results, gist):

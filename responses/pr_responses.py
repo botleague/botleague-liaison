@@ -1,13 +1,14 @@
+from logs import log
 from typing import Optional, List
 
-from box import Box, BoxList
+from box import Box
 
 
 class PrResponse:
     msg: str
 
     def __init__(self, msg):
-        self.msg = msg
+        self.msg = truncate_pr_msg(msg)
 
 
 class ErrorPrResponse(PrResponse):
@@ -48,3 +49,10 @@ class NoBotsResponse(PrResponse):
 
 class EvalErrorPrResponse(ErrorPrResponse):
     pass
+
+
+def truncate_pr_msg(pr_msg):
+    if len(pr_msg) >= 140:
+        log.error(f'PR message {pr_msg} was longer than 140 chars, truncating')
+        pr_msg = pr_msg[:139]
+    return pr_msg
