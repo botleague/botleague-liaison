@@ -180,7 +180,6 @@ class BotEvalBase:
                         status=constants.EVAL_STATUS_STARTED,
                         started=now,
                         started_at=SERVER_TIMESTAMP,
-                        source_commit=bot_def.source_commit,
                         league_commit_sha=head_commit,
                         botleague_liaison_host=self.botleague_liaison_host,
                         pull_request=dict(
@@ -193,6 +192,11 @@ class BotEvalBase:
                             base_commit=base_commit,
                             base_full_name=base_full_name,
                         ), )
+        if 'source_commit' in bot_def:
+            eval_data.source_commit = bot_def.source_commit
+        else:
+            eval_data.source_commit = ''
+
         return eval_data
 
     @staticmethod
