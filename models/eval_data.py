@@ -1,6 +1,6 @@
 from botleague_helpers.db import DB
 from box import Box
-from bot_eval import get_eval_db_key
+from botleague_helpers.utils import get_eval_db_key
 
 
 INVALID_DB_KEY_STATE_MESSAGE = 'Eval key in eval data were different. ' \

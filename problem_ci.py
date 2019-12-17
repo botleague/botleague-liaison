@@ -9,7 +9,7 @@ from box import Box
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from logs import log
 
-from bot_eval import get_bot_eval
+from bot_eval import get_bot_eval, PROBLEM_CHANGED
 from responses.pr_responses import RegenPrResponse, ErrorPrResponse, \
     ProblemCIResponse, NoBotsResponse, EvalStartedPrResponse, \
     EvalErrorPrResponse
@@ -110,7 +110,8 @@ def eval_bots(base_repo, bots_with_problem, changed_filenames, changed_files,
             head_repo=head_repo,
             pull_request=pull_request,
             github_client=github_client,
-            botleague_liaison_host=botleague_liaison_host)
+            botleague_liaison_host=botleague_liaison_host,
+            reason=PROBLEM_CHANGED)
         trigger_resp = bot_eval.trigger_single_eval(
             bot_def=bot, problem_def=prob_def, problem_id=problem_id,
             problem_ci_replace_sim_url=replace_sim_url,

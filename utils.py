@@ -99,11 +99,13 @@ def trigger_leaderboard_generation():
 
 
 def get_liaison_db_store():
+    # TODO: Deprecate this in favor of botleague_helpers version
     ret = get_db(collection_name='botleague_liaison')
     return ret
 
 
 def dbox(obj=None, **kwargs):
+    # TODO: Deprecate this in favor of botleague_helpers version
     if kwargs:
         obj = dict(kwargs)
     else:

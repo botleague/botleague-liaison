@@ -11,6 +11,7 @@ import constants
 import github
 import requests
 from botleague_helpers.config import blconfig, get_test_name_from_callstack
+from botleague_helpers.utils import get_eval_db_key
 from github import Repository
 from responses.pr_responses import ErrorPrResponse, RegenPrResponse, \
     IgnorePrResponse, PrResponse, EvalErrorPrResponse, EvalStartedPrResponse
@@ -19,6 +20,8 @@ from utils import read_file, get_str_or_box, get_liaison_db_store
 
 from utils import generate_rand_alphanumeric
 
+BOT_CHANGED = 'bot_changed'
+PROBLEM_CHANGED = 'problem_changed'
 
 class BotEvalBase:
     botname: str
@@ -35,7 +38,7 @@ class BotEvalBase:
     def __init__(self, botname, changed_filenames, changed_files,
                  user_or_org_dir, base_repo,
                  head_repo, pull_request, github_client,
-                 botleague_liaison_host=None):
+                 botleague_liaison_host=None, reason=None):
         super().__init__()  # Support multiple inheritance
         self.botname = botname
         self.changed_filenames: List[str] = changed_filenames
@@ -48,6 +51,7 @@ class BotEvalBase:
         self.seed = random.choice(range(1, 10 ** 6))
         self.github_client = github_client
         self.botleague_liaison_host = botleague_liaison_host or constants.HOST
+        self.reason = reason
 
     def eval(self) -> Union[PrResponse, List[PrResponse]]:
         bot_def_filenames = []
@@ -182,6 +186,7 @@ class BotEvalBase:
                         started_at=SERVER_TIMESTAMP,
                         league_commit_sha=head_commit,
                         botleague_liaison_host=self.botleague_liaison_host,
+                        reason=self.reason,
                         pull_request=dict(
                             url=pull_url,
                             number=pull_number,
@@ -265,12 +270,6 @@ class BotEval(BotEvalBase):
         return ret
 
 
-def get_eval_db_key(eval_key):
-    # Prefix since we are going into our GCP app's global datastore
-    return '%s_%s' % (constants.ONGOING_EVALUATIONS_KEY_PREFIX,
-                      eval_key)
-
-
 class BotEvalMock(BotEvalBase, Mockable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -338,7 +337,8 @@ def process_changed_bot(
                 head_repo=head_repo,
                 pull_request=pull_request,
                 github_client=github_client,
-                botleague_liaison_host=botleague_liaison_host)
+                botleague_liaison_host=botleague_liaison_host,
+                reason=BOT_CHANGED)
             resp = evaluator.eval()
     return resp, should_gen_leaderboard
 

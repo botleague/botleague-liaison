@@ -11,13 +11,12 @@ from typing import Tuple, Optional
 
 import github
 from botleague_helpers.config import get_test_name_from_callstack, blconfig
-from botleague_helpers.utils import box2json, dbox
+from botleague_helpers.utils import box2json, dbox, \
+    get_bot_scores_id_from_parts, get_bot_scores_db, get_eval_db_key
 from botleague_helpers.db import DB, get_db
 from box import Box, BoxList
 from github import Github, GithubException
 import github.Gist
-
-from bot_eval import get_eval_db_key
 import constants
 from models.eval_data import get_eval_data, save_eval_data
 from logs import log
@@ -106,7 +105,7 @@ def save_problem_ci_results(ci_error, db, error, eval_data, gist, problem_ci,
     db.set(problem_ci.id, problem_ci)
 
 def save_to_bot_scores(eval_data, eval_key, new_score: Box):
-    db = get_scores_db()
+    db = get_bot_scores_db()
     score_id = get_scores_id(eval_data)
     orig = db.get(score_id)
     bot_scores = db.get(score_id) or dbox(Box(scores=[]))
@@ -425,6 +424,8 @@ def add_eval_data_to_results(eval_data: Box, results: Box):
     results.league_commit_sha = eval_data.league_commit_sha
     results.source_commit = eval_data.source_commit
     results.seed = eval_data.seed
+    if 'reason' in eval_data:
+        results.reason = eval_data.reason
     results.utc_timestamp = time.time()
 
 
@@ -432,12 +433,8 @@ def get_scores_id(eval):
     """
     :return: e.g. 'crizcraig#goodbot-on-deepdrive#unprotected_left'
     """
-
-    # Forward slashes not allowed on firestore
-    # https://stackoverflow.com/a/54918283/134077
-    problem_id = eval.problem_id.replace('/', '#')
-
-    ret = f'{eval.username}#{eval.botname}-on-{problem_id}'
+    ret = get_bot_scores_id_from_parts(eval.problem_id, eval.username,
+                                       eval.botname)
     return ret
 
 
@@ -460,19 +457,15 @@ def collect_bot_scores(docker_tag=
         save_to_bot_scores(eval_data, eval_key, score)
 
 
-def get_scores_db():
-    return get_db('botleague_liaison_bot_scores')
+def get_past_bot_scores(bot_eval=None):
+    ret = None
+    if bot_eval:
+        ret = get_bot_scores_db().get(get_scores_id(bot_eval))
+    if not ret:
+        ret = Box(scores=[], means=None)
+    return ret
 
 
 if __name__ == '__main__':
     if 'collect_bot_scores' in sys.argv:
           collect_bot_scores()
-
-
-def get_past_bot_scores(bot_eval=None):
-    ret = None
-    if bot_eval:
-        ret = get_scores_db().get(get_scores_id(bot_eval))
-    if not ret:
-        ret = Box(scores=[], means=None)
-    return ret

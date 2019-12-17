@@ -9,19 +9,21 @@ from random import random
 from box import Box
 
 import constants
-from bot_eval import get_eval_db_key
+from botleague_helpers.utils import get_eval_db_key
+
+from bot_eval import BOT_CHANGED, PROBLEM_CHANGED
 from handlers.confirm_handler import process_confirm
 from handlers.results_handler import add_eval_data_to_results, process_results, \
-    score_within_confidence_interval, get_past_bot_scores, get_scores_db, \
-    get_scores_id
+    score_within_confidence_interval, get_past_bot_scores, get_scores_id
 from handlers.pr_handler import PrProcessorMock, handle_pr_request
 from models.eval_data import INVALID_DB_KEY_STATE_MESSAGE, get_eval_data
 from responses.pr_responses import ErrorPrResponse, EvalStartedPrResponse
 
 from botleague_helpers.config import activate_test_mode, blconfig
+from botleague_helpers.utils import get_bot_scores_db, get_liaison_db_store, \
+    dbox, generate_rand_alphanumeric
 
 from tests.mockable import Mockable
-from utils import get_liaison_db_store, dbox, generate_rand_alphanumeric
 
 activate_test_mode()  # So don't import this module from non-test code!
 
@@ -213,6 +215,7 @@ def bot_eval_helper():
                                           'results.json'))
     results.eval_key = eval_data.eval_key
     add_eval_data_to_results(eval_data, results)
+    assert results.reason == BOT_CHANGED
     # TODO: assert much more here
 
 
@@ -221,11 +224,12 @@ def test_problem_ci_sim_build():
     resp, status = handle_pr_request(pr_event)
     assert resp
     assert status is None  # No PR status gets created in test
+    assert all(b.reason == PROBLEM_CHANGED for b in resp.bot_evals)
 
 
 def get_past_bot_scores_test(past_scores: list, bot_eval: Box):
     if not past_scores:
-        get_scores_db().set(get_scores_id(bot_eval), {})
+        get_bot_scores_db().set(get_scores_id(bot_eval), {})
     else:
         past_bot_scores = dbox()
 
@@ -236,6 +240,6 @@ def get_past_bot_scores_test(past_scores: list, bot_eval: Box):
         past_bot_scores.mean = statistics.mean(
             past_scores) if past_scores else None
 
-        get_scores_db().set(get_scores_id(bot_eval), past_bot_scores)
+        get_bot_scores_db().set(get_scores_id(bot_eval), past_bot_scores)
     ret = get_past_bot_scores(bot_eval)
     return ret
