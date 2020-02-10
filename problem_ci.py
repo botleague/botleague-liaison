@@ -3,6 +3,7 @@ from os.path import join
 from typing import Union
 
 import github
+import requests
 from botleague_helpers.reduce import create_reduce
 from botleague_helpers.utils import box2json
 from box import Box
@@ -47,17 +48,27 @@ def process_changed_problem(changed_problem_definitions,
         problem_id = '/'.join(changed_problem_definitions[0].split('/')[-3:-1])
         # For each bot that lists this problem, run an eval and collect the
         # results.
-        bots_with_problem = Box()
+
+        # Just get top three bots on leaderboard
+        bots_to_eval = Box()
+
+        leaders = Box(requests.get(
+            f'https://botleague.io/data/problems/{problem_id}/'
+            f'aggregated_results.json').json())
+
+        top_3 = {(b.problem, b.username, b.botname) for b in leaders.bots[:3]}
+
         for f_name in glob(f'{BOTLEAGUE_REPO_ROOT}/bots/*/*/bot.json'):
             bot = read_box(f_name)
             botname = f_name.split('/')[-2]
             bot_user = f_name.split('/')[-3]
-            if problem_id in bot.problems:
-                bots_with_problem[(bot_user, botname)] = bot
-        if not bots_with_problem:
+            if problem_id in bot.problems and \
+                    (problem_id, bot_user, botname) in top_3:
+                bots_to_eval[(bot_user, botname)] = bot
+        if not bots_to_eval:
             resp = NoBotsResponse('No bots with this problem, nothing to eval')
         else:
-            resp = eval_bots(base_repo, bots_with_problem, changed_filenames,
+            resp = eval_bots(base_repo, bots_to_eval, changed_filenames,
                              changed_files, from_mock, github_client, head_repo,
                              prob_def, problem_id, pull_request,
                              botleague_liaison_host, replace_sim_url,
