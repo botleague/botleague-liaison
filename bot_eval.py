@@ -170,6 +170,8 @@ class BotEvalBase:
         merge_commit_sha = self.pr_event.merge_commit_sha
         head_commit = self.pr_event.head.sha
         base_commit = self.pr_event.base.sha
+        draft = self.pr_event.draft
+        is_release = not draft
         head_full_name = self.pr_event.head.repo.full_name
         base_full_name = self.pr_event.base.repo.full_name
         now = time.time()
@@ -187,6 +189,7 @@ class BotEvalBase:
                         league_commit_sha=head_commit,
                         botleague_liaison_host=self.botleague_liaison_host,
                         reason=self.reason,
+                        is_release=is_release,
                         pull_request=dict(
                             url=pull_url,
                             number=pull_number,
@@ -196,6 +199,8 @@ class BotEvalBase:
                             head_full_name=head_full_name,
                             base_commit=base_commit,
                             base_full_name=base_full_name,
+                            draft=draft,
+                            pr_event=self.pr_event,
                         ), )
         if 'source_commit' in bot_def:
             eval_data.source_commit = bot_def.source_commit
