@@ -381,6 +381,8 @@ def post_results_to_gist(db, results) -> Optional[github.Gist.Gist]:
         github_client = Github(
             decrypt_symmetric(
                 db.get(constants.BOTLEAGUE_RESULTS_GITHUB_TOKEN_NAME)))
+        # TODO: Need to use access_token header instead of query param by
+        #  July!
         ret = github_client.get_user().create_gist(
             public=True,
             files={'results.json': github.InputFileContent(
