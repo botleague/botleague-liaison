@@ -302,7 +302,7 @@ def get_bots_done_fn(db, bot_eval_keys) -> callable:
 
 def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
     if error:
-        pr_msg = error
+        pr_msg = f'{str(error)[:50]}... check details link for full logs.'
         pr_status = constants.PR_STATUS_ERROR
     else:
         pr_msg = 'Evaluation complete'
@@ -324,7 +324,7 @@ def update_pr_status_problem_ci(error: Error, problem_ci: Box, eval_data: Box):
 def update_pr_status(error, eval_data, results, gist):
     if error:
         results.error = error
-        pr_msg = error
+        pr_msg = f'{str(error)[:50]}... check details link for full logs.'
         pr_status = constants.PR_STATUS_ERROR
     else:
         pr_msg = 'Evaluation complete'

@@ -52,6 +52,7 @@ class EvalErrorPrResponse(ErrorPrResponse):
 
 
 def truncate_pr_msg(pr_msg):
+    pr_msg = str(pr_msg)
     if len(pr_msg) >= 140:
         log.error(f'PR message {pr_msg} was longer than 140 chars, truncating')
         pr_msg = pr_msg[:139]
